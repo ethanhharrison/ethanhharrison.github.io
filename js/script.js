@@ -6,8 +6,8 @@ function openFumo(evt, fumoName) {
     }
     tablinks = document.getElementsByClassName("open");
     for (i = 0; i < tablinks.length; i++) {
-        tablinks[i].className = tablinks[i].className.replace("open","closed");
+        tablinks[i].className = tablinks[i].className.replace("open", "closed");
     }
     document.getElementById(fumoName).style.display = "block";
-    evt.currentTarget.className = evt.currentTarget.className.replace("closed","open");
+    evt.currentTarget.className = evt.currentTarget.className.replace("closed", "open");
 }
