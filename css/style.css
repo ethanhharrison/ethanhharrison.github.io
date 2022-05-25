@@ -32,20 +32,16 @@ body {
     font-size: 17px;
 }
 
-.tab button:hover {
+.tab button.closed:hover {
     background-color: #505c50;
 }
 
-.tab button:active {
+.tab button.closed:active {
     background-color: #5f9c5c;
 }
 
 .tab button.open {
     background-color: #5f9c5c;
-}
-
-.tab button.closed {
-    background-color: #1f1f1f;
 }
 
 .tabcontent {
