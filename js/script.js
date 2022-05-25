@@ -4,10 +4,10 @@ function openFumo(evt, fumoName) {
     for (i = 0; i < tabcontent.length; i++) {
         tabcontent[i].style.display = "none";
     }
-    tablinks = document.getElementsByClassName("tablinks");
+    tablinks = document.getElementsByClassName("closed");
     for (i = 0; i < tablinks.length; i++) {
-        tablinks[i].className = tablinks[i].className.replace(" open", "");
+        tablinks[i].className = "closed";
     }
     document.getElementById(fumoName).style.display = "block";
-    evt.currentTarget.className += " open";
+    evt.currentTarget.className = "open";
 }
