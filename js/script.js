@@ -11,3 +11,7 @@ function openFumo(evt, fumoName) {
     document.getElementById(fumoName).style.display = "block";
     evt.currentTarget.className += " active";
 }
+
+function bruh() {
+
+}
