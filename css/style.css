@@ -8,23 +8,6 @@ body {
     font-family: "Helvetica";
 }
 
-section {
-  min-height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-section:nth-child(1) {
-  color: #e0ffff;
-}
-section:nth-child(2) {
-  color: #42455a;
-  background: #e0ffff;
-}
-section:nth-child(3) {
-  color: #e0ffff;
-}
-
 .tab {
     font-family: "Helvetica";
     overflow: hidden;
