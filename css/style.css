@@ -8,6 +8,13 @@ body {
     font-family: "Helvetica";
 }
 
+header nav a {
+  padding: 10px 20px;
+  font-size: 2rem;
+  border-radius: 5px;
+  letter-spacing: 0.5px;
+}
+
 .tab {
     font-family: "Helvetica";
     overflow: hidden;
