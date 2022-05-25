@@ -40,6 +40,10 @@ body {
     background-color: #5f9c5c;
 }
 
+.tab button.open {
+    background-color: #505c50;
+}
+
 .tabcontent {
     display: none;
     padding: 6px 12px;
