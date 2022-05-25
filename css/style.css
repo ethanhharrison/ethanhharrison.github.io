@@ -8,6 +8,20 @@ body {
     font-family: "Helvetica";
 }
 
+header nav a {
+  padding: 10px 20px;
+  font-size: 2rem;
+  border-radius: 5px;
+  letter-spacing: 0.5px;
+}
+
+section {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
 .tab {
     font-family: "Helvetica";
     overflow: hidden;
@@ -32,11 +46,17 @@ body {
     font-size: 17px;
 }
 
-.tab button:hover {
+.tab button.closed:hover {
     background-color: #505c50;
+    transition: 0.5s ease-out;
 }
 
-.tab button:active {
+.tab button.closed:active {
+    background-color: #5f9c5c;
+    transition: 0.5s ease-out;
+}
+
+.tab button.open {
     background-color: #5f9c5c;
 }
 
