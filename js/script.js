@@ -4,7 +4,7 @@ function openFumo(evt, fumoName) {
     for (i = 0; i < tabcontent.length; i++) {
         tabcontent[i].style.display = "none";
     }
-    tablinks = document.getElementsByClassName("closed");
+    tablinks = document.getElementsByClassName("open");
     for (i = 0; i < tablinks.length; i++) {
         tablinks[i].className = tablinks[i].className.replace("open","closed");
     }
