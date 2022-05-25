@@ -34,10 +34,12 @@ body {
 
 .tab button.closed:hover {
     background-color: #505c50;
+    transition: 0.5s ease-out;
 }
 
 .tab button.closed:active {
     background-color: #5f9c5c;
+    transition: 0.5s ease-out;
 }
 
 .tab button.open {
