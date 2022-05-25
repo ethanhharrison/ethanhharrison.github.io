@@ -8,6 +8,13 @@ body {
     font-family: "Helvetica";
 }
 
+section {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
 .tab {
     font-family: "Helvetica";
     overflow: hidden;
