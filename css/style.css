@@ -45,7 +45,7 @@ body {
 }
 
 .tab button.closed {
-    background-color: inherit;
+    background-color: #1f1f1f;
 }
 
 .tabcontent {
