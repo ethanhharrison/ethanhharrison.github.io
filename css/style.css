@@ -41,7 +41,11 @@ body {
 }
 
 .tab button.open {
-    background-color: #505c50;
+    background-color: #5f9c5c;
+}
+
+.tab button.closed {
+    background-color: inherit;
 }
 
 .tabcontent {
