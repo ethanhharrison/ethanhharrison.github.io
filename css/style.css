@@ -4,7 +4,14 @@
     box-sizing: border-box;
 }
 
+.top-container {
+    background-color: #42455a;
+    padding: 30px;
+    text-align: center;
+}
+
 header {
+    position: sticky;
     top: 0;
     left: 0;
     width: 100%;
@@ -20,7 +27,8 @@ body {
     font-family: "Helvetica";
 }
 
-header.tab {
+.tab {
+    position: sticky;
     font-family: "Helvetica";
     overflow: hidden;
     background-color: inherit;
@@ -50,6 +58,7 @@ footer {
     display: flex;
     justify-content: center;
     align-items: center;
+    text-align: center;
 }
 
 .tab button {
