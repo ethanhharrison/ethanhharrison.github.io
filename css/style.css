@@ -14,18 +14,10 @@ body {
     font-family: "Helvetica";
 }
 
-section {
-    min-height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.tab {
+header.tab {
     font-family: "Helvetica";
     overflow: hidden;
-    border: 2px solid #eee;
-    background-color: #1f1f1f;
+    background-color: inherit;
 }
 
 .center {
