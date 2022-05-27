@@ -6,7 +6,7 @@
 
 .top-container {
     background-color: #42455a;
-    padding: 10px 10px 10px 10px;
+    padding: 2px 10px 10px 10px;
     text-align: center;
 }
 
@@ -20,6 +20,10 @@ header {
     padding: 20px;
     text-align: center;
     border-bottom: 1px solid #00c2cb;
+}
+
+header h1 {
+    padding-bottom: 30px;
 }
 
 body {
@@ -61,7 +65,7 @@ footer {
     text-align: center;
 }
 
-.tab button {
+button {
     background-color: inherit;
     float: left;
     border: none;
@@ -70,6 +74,7 @@ footer {
     padding: 14px 16px;
     transition: 0.3s;
     font-size: 17px;
+    color: white;
 }
 
 .tab button.closed:hover {
@@ -88,12 +93,60 @@ footer {
 
 .tabcontent {
     display: none;
-    padding: 6px 12px;
-    border: none;
-    border-top: none;
 }
 
 .imgstyle {
     border-radius: 25px;
     border: 2px solid #00c2cb;
+}
+
+.container {
+    width: 100%;
+    height: 70vh;
+    display: none;
+    align-items: top;
+    justify-content: center;
+}
+
+form {
+    background-color: #42455a;
+    display: flex;
+    flex-direction: column;
+    padding: 2vw 4vw;
+    width: 90%;
+    max-width: 600px;
+    border-radius: 10px;
+}
+
+form h1 {
+    font-size: 45px;
+}
+
+form input,
+form textarea {
+    border: 0;
+    margin: 10px, 0;
+    padding: 20px;
+    width: 100%;
+    border-radius: 10px;
+    font-size: 16px;
+}
+
+form button {
+    padding: 15px;
+    font-size: 18px;
+    border: 2px solid white;
+    cursor: pointer;
+    width: 150px;
+    margin: 20px auto 0;
+    border-radius: 30px;
+}
+
+form button:hover {
+    transform: scale(1.1);
+    transition: 0.5s ease-out;
+}
+
+form button:active {
+    background-color: #00c2cb;
 }
