@@ -37,8 +37,8 @@
 
     </div>
     <div id="Contact" class="tabcontent container">
-        <form onsubmit="sendEmail(); reset(); return false;">
-            <h1>Get In Touch!</h1>
+        <form>
+            <h1 style="color: white">Get In Touch!</h1>
             <input type="text" id="name" placeholder="Your Name" required><br><br>
             <input type="email" id="email" placeholder="Email ID" required><br><br>
             <input type="text" id="phone" placeholder="Phone Number" required><br><br>
@@ -58,22 +58,6 @@
         <p>Ethan Harrison © 2022</p>
     </footer>
     <script src="js/script.js"></script>
-    <script src="https://smtpjs.com/v3/smtp.js"></script>
-    <script>
-        function sendEmail() {
-            Email.send({
-                Host: "smtp.gmail.com",
-                Username: "ethan.harrison111111@gmail.com",
-                Password: "Guitar14!",
-                To: 'ethan.harrison111111@gmail.com',
-                From: document.getElementById("email").value,
-                Subject: "New Contact Form Enquiry",
-                Body: "And this is the body"
-            }).then(
-                message => alert(message)
-            );
-        };
-    </script>
 </body>
 
 </html>
