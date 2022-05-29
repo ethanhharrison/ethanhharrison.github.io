@@ -11,3 +11,10 @@ function openFumo(evt, fumoName) {
     document.getElementById(fumoName).style.display = "flex";
     evt.currentTarget.className = evt.currentTarget.className.replace("closed", "open");
 }
+
+function showname() {
+    var name = document.getElementById('File');
+    alert('Selected file: ' + name.files.item(0).name);
+    alert('Selected file: ' + name.files.item(0).size);
+    alert('Selected file: ' + name.files.item(0).type);
+};

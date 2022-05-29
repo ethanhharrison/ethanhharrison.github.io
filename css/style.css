@@ -102,7 +102,7 @@ button {
 
 .container {
     width: 100%;
-    height: 55vh;
+    height: 70vh;
     display: none;
     align-items: top;
     justify-content: center;
@@ -116,10 +116,6 @@ form {
     width: 90%;
     max-width: 600px;
     border-radius: 10px;
-}
-
-form h1 {
-    font-size: 45px;
 }
 
 form input,
@@ -149,4 +145,21 @@ form button:hover {
 
 form button:active {
     background-color: #00c2cb;
+}
+
+input[type="file"] {
+    display: none;
+}
+
+.custom-file-upload {
+    font-size: 16px;
+    border-radius: 10px;
+    background-color: white;
+    float: left;
+    outline: none;
+    cursor: pointer;
+    padding: 14px 16px;
+    transition: 0.3s;
+    font-size: 17px;
+    color: gray;
 }
