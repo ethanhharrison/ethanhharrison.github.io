@@ -14,7 +14,5 @@ function openFumo(evt, fumoName) {
 
 function showname() {
     var name = document.getElementById('File');
-    alert('Selected file: ' + name.files.item(0).name);
-    alert('Selected file: ' + name.files.item(0).size);
-    alert('Selected file: ' + name.files.item(0).type);
+    document.getElementById('file-subject').innerHTML = name.files.item(0).name;
 };
