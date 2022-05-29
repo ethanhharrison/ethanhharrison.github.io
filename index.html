@@ -62,12 +62,12 @@
     <script>
         function sendEmail() {
             Email.send({
-                Host: "smtp.yourisp.com",
-                Username: "username",
-                Password: "password",
-                To: 'them@website.com',
-                From: "you@isp.com",
-                Subject: "This is the subject",
+                Host: "smtp.gmail.com",
+                Username: "ethan.harrison111111@gmail.com",
+                Password: "Guitar14!",
+                To: 'ethan.harrison111111@gmail.com',
+                From: document.getElementById("email").value,
+                Subject: "New Contact Form Enquiry",
                 Body: "And this is the body"
             }).then(
                 message => alert(message)
