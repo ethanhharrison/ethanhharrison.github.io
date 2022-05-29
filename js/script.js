@@ -14,5 +14,5 @@ function openFumo(evt, fumoName) {
 
 function showname() {
     var name = document.getElementById('File');
-    document.getElementById('file-subject').innerHTML = name.files.item(0).name;
+    document.getElementById('file-subject').innerHTML = "File Upload: " + name.files.item(0).name;
 };
