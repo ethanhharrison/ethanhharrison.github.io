@@ -6,7 +6,7 @@
 
 .top-container {
     background-color: #42455a;
-    padding: 2px 10px 10px 10px;
+    padding: 2px 2px 2px 2px;
     text-align: center;
 }
 
@@ -27,6 +27,8 @@ header h1 {
 }
 
 body {
+    margin: 0;
+    padding: 0;
     background: #222;
     font-family: "Helvetica";
 }
