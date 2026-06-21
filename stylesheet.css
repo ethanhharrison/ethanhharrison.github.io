@@ -115,9 +115,24 @@ h2 {
   position: relative;
 }
 
+.one-wide {
+  width: 160px;
+  height: 90px;
+  position: relative;
+}
+
 .two {
   width: 160px;
   height: 160px;
+  position: absolute;
+  transition: opacity .2s ease-in-out;
+  -moz-transition: opacity .2s ease-in-out;
+  -webkit-transition: opacity .2s ease-in-out;
+}
+
+.two-wide {
+  width: 160px;
+  height: 90px;
   position: absolute;
   transition: opacity .2s ease-in-out;
   -moz-transition: opacity .2s ease-in-out;
