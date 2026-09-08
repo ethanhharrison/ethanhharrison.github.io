@@ -169,7 +169,7 @@ def best_fit(im1, im2, matching_metric, shift_range):
     best_shift = (None, None)
     best_score = -np.inf
     for i in range(-shift_range, shift_range + 1):
-        for j in range(-shift_range + y_shift, shift_range + y_shift + 1):
+        for j in range(-shift_range, shift_range + 1):
             shifted_im1 = shift_image(im1, (i, j))
             score = matching_metric(shifted_im1, im2)
             if score > best_score:
