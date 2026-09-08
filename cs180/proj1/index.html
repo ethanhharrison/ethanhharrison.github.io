@@ -1,0 +1,524 @@
+ <!DOCTYPE HTML>
+<html lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+    <title>CS180 Project 1 &mdash; Ethan Harrison</title>
+
+    <meta name="author" content="Ethan Harrison">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="shortcut icon" href="../../images/favicon/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" type="text/css" href="../../stylesheet.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
+    <style>
+      pre.code {
+        background-color: #f6f8fa;
+        border: 1px solid #e1e4e8;
+        border-radius: 8px;
+        padding: 14px 16px;
+        overflow-x: auto;
+        font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+        font-size: 12.5px;
+        line-height: 1.45;
+        color: #24292e;
+      }
+      pre.code code.hljs {
+        background: transparent;
+        padding: 0;
+        font-family: inherit;
+        font-size: inherit;
+      }
+      table.offsets {
+        border-collapse: collapse;
+        margin: 0 auto;
+        font-size: 14px;
+      }
+      table.offsets th, table.offsets td {
+        border: 1px solid #ddd;
+        padding: 6px 14px;
+        text-align: center;
+      }
+      table.offsets th {
+        background-color: #f6f8fa;
+        font-weight: 700;
+      }
+      .caption {
+        font-size: 13px;
+        color: #444;
+      }
+    </style>
+
+  </head>
+
+  <body>
+    <table style="width:100%;max-width:800px;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+      <tr style="padding:0px">
+        <td style="padding:0px">
+
+          <!-- ===================== Header ===================== -->
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr style="padding:0px">
+              <td style="padding:2.5%;width:100%;vertical-align:middle">
+                <p class="name" style="text-align: center;">
+                  Project 1: Colorizing the <br> Prokudin-Gorskii Collection
+                </p>
+                <p style="text-align:center">
+                  <strong>E Harrison</strong> &nbsp;&mdash;&nbsp; CS180, Fall 2026
+                </p>
+                <p style="text-align:center">
+                  <a href="../index.html">CS180 Projects</a> &nbsp;/&nbsp;
+                  <a href="../../index.html">Home</a> &nbsp;/&nbsp;
+                  <a href="https://cal-cs180.github.io/fa26/hw/proj1/index.html">Assignment</a>
+                </p>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <!-- ===================== Overview ===================== -->
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:16px;width:100%;vertical-align:middle">
+                <h2>Overview</h2>
+                <p>
+                  In the early 1900s, <a href="https://en.wikipedia.org/wiki/Sergey_Prokudin-Gorsky">Sergei Prokudin-Gorskii</a>
+                  photographed the Russian Empire in color long before color printing existed. He
+                  recorded each scene three times through a red, a green, and a blue filter onto a
+                  single glass plate. The digitized negatives &mdash; now held by the Library of
+                  Congress &mdash; stack the three exposures vertically (top to bottom: <strong>B</strong>,
+                  <strong>G</strong>, <strong>R</strong>).
+                </p>
+                <p>
+                  The goal of this project is to take a stacked plate, split it into its three color
+                  channels, and <em>align</em> them into a single, artifact-free color photograph.
+                  The plate below shows the three raw exposures &mdash; notice how simply stacking them
+                  without alignment produces color fringing around edges.
+                </p>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="text-align:center;padding:16px;width:100%;vertical-align:middle">
+                <img src="images/cathedral_plate.jpg" style="max-height:520px;width:auto;max-width:100%;" alt="Raw stacked BGR glass plate">
+                <br><span class="caption"><em>A raw glass plate (<strong>cathedral</strong>): the B, G, and R exposures stacked top-to-bottom.</em></span>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <!-- ===================== Naive alignment ===================== -->
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:16px;width:100%;vertical-align:middle">
+                <h2>Part 1: Naive Single-Scale Alignment</h2>
+                <p>
+                  The simplest approach fixes the blue channel and searches for the
+                  <em>(x, y)</em> translation of the green and red channels that best matches it. I
+                  exhaustively try every displacement in a window of <code>[-15, 15]</code> pixels,
+                  score each candidate with an image-matching metric, and keep the best one.
+                </p>
+                <p>
+                  I scored candidates with two metrics. The <strong>L2 (Euclidean) distance</strong>
+                  measures the raw pixel difference between the two channels, while
+                  <strong>normalized cross-correlation (NCC)</strong> takes the dot product of the two
+                  channels after mean-subtracting and normalizing them to unit length. NCC is more
+                  robust to overall brightness differences between channels, so I used it as my
+                  default metric.
+                </p>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:0px 16px 16px 16px;width:100%;vertical-align:middle">
+                <pre class="code"><code class="language-python">import numpy as np
+import cv2 as cv
+
+# read in the image as grayscale and convert to float in [0,1]
+im = cv.imread(imname, cv.IMREAD_GRAYSCALE)
+im = im.astype(np.float32) / 255.0
+
+# compute the height of each part (just 1/3 of total) and separate color channels
+height = int(np.floor(im.shape[0] / 3.0))
+b = im[:height]
+g = im[height: 2*height]
+r = im[2*height: 3*height]
+
+def l2_dist(im1, im2):
+    im1_vec = im1.flatten()
+    im2_vec = im2.flatten()
+    return -np.sqrt(np.sum((im1_vec - im2_vec) ** 2)) # negative since we want to minimize this score
+
+def ncc(im1, im2):
+    def normalize_and_scale(im):
+        im_vec = im.flatten()
+        im_shifted = im_vec - np.mean(im_vec)
+        return im_shifted / np.linalg.norm(im_shifted)
+    im1_norm, im2_norm = normalize_and_scale(im1), normalize_and_scale(im2)
+    return np.dot(im1_norm, im2_norm)
+
+def shift_image(im, shift):
+    shifted_im = np.roll(im, shift[0], axis=0)
+    shifted_im = np.roll(shifted_im, shift[1], axis=1)
+    return shifted_im
+
+def best_fit(im1, im2, matching_metric, shift_range):
+    best_shift = (None, None)
+    best_score = -np.inf
+    for i in range(-shift_range, shift_range + 1):
+        for j in range(-shift_range + y_shift, shift_range + y_shift + 1):
+            shifted_im1 = shift_image(im1, (i, j))
+            score = matching_metric(shifted_im1, im2)
+            if score > best_score:
+                best_shift = (i, j)
+                best_score = score
+    return best_shift
+
+def align(im1, im2):
+    shift = best_fit(im1, im2, matching_metric=ncc)
+    return shift
+
+# align G and R to the B channel, then stack into a color image
+g_shift = align(g, b)
+r_shift = align(r, b)
+ag = shift_image(g, g_shift)
+ar = shift_image(r, r_shift)
+im_out = np.dstack([ar, ag, b])</code></pre>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:16px;width:100%;vertical-align:middle">
+                <p>
+                  This exhaustive search is cheap enough to run directly on the small, low-resolution
+                  JPEGs. My first attempt scored each candidate over the <em>entire</em> channel &mdash;
+                  and the results were not quite right.
+                </p>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:10px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="text-align:center;width:33%;vertical-align:top">
+                <img src="images/cathedral_nocrop.jpg" width="100%" alt="Cathedral without cropping">
+                <br><strong>cathedral</strong>
+              </td>
+              <td style="text-align:center;width:33%;vertical-align:top">
+                <img src="images/monastery_nocrop.jpg" width="100%" alt="Monastery without cropping">
+                <br><strong>monastery</strong>
+              </td>
+              <td style="text-align:center;width:33%;vertical-align:top">
+                <img src="images/tobolsk_nocrop.jpg" width="100%" alt="Tobolsk without cropping">
+                <br><strong>tobolsk</strong>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:16px;width:100%;vertical-align:middle">
+                <p>
+                  The culprit is the ragged border of each glass-plate scan. The black, white, and
+                  discolored edges do <em>not</em> agree across the three channels, so when they are
+                  included in the matching metric they dominate the score and pull the search toward a
+                  bad displacement. <strong>monastery</strong> shows this most dramatically &mdash; the
+                  heavy red/cyan ghosting means the channels never locked onto the real content.
+                </p>
+                <p>
+                  My fix is to score only the <em>interior</em> of each channel. Before evaluating the
+                  metric, I crop a centered window out of both channels, so the noisy borders are
+                  ignored and the metric reflects only the actual scene.
+                </p>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:0px 16px 16px 16px;width:100%;vertical-align:middle">
+                <pre class="code"><code class="language-python">def crop_image(im, crop_size):
+    left = (im.shape[0] - crop_size) // 2
+    right = (im.shape[0] + crop_size) // 2
+    bottom = (im.shape[1] - crop_size) // 2
+    top = (im.shape[1] + crop_size) // 2
+    return im[left:right, bottom:top]
+
+def best_fit(im1, im2, matching_metric, shift_range, crop=True):
+    best_shift = (None, None)
+    best_score = -np.inf
+    for i in range(-shift_range, shift_range + 1):
+        for j in range(-shift_range, shift_range + 1):
+            shifted = shift_image(im1, (i, j))
+            a, b = shifted, im2
+            if crop:
+                a = crop_image(shifted, 200)
+                b = crop_image(im2, 200)
+            score = matching_metric(a, b)
+            if score > best_score:
+                best_shift = (i, j)
+                best_score = score
+    return best_shift</code></pre>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:16px;width:100%;vertical-align:middle">
+                <p>
+                  With the borders cropped out of the scoring, all three plates align cleanly. The
+                  displacement vectors listed below are the <em>(row, col)</em> shifts applied to the
+                  green and red channels.
+                </p>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:10px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="text-align:center;width:33%;vertical-align:top">
+                <img src="images/cathedral.jpg" width="100%" alt="Cathedral colorized">
+                <br><strong>cathedral</strong>
+                <br><span class="caption">G: <em>(5, 2)</em> &nbsp; R: <em>(10, 3)</em></span>
+              </td>
+              <td style="text-align:center;width:33%;vertical-align:top">
+                <img src="images/monastery.jpg" width="100%" alt="Monastery colorized">
+                <br><strong>monastery</strong>
+                <br><span class="caption">G: <em>(-3, 2)</em> &nbsp; R: <em>(3, 2)</em></span>
+              </td>
+              <td style="text-align:center;width:33%;vertical-align:top">
+                <img src="images/tobolsk.jpg" width="100%" alt="Tobolsk colorized">
+                <br><strong>tobolsk</strong>
+                <br><span class="caption">G: <em>(3, 3)</em> &nbsp; R: <em>(7, 3)</em></span>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <!-- ===================== Image pyramid ===================== -->
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:16px;width:100%;vertical-align:middle">
+                <h2>Part 2: Multi-Scale Alignment with an Image Pyramid</h2>
+                <p>
+                  The full-resolution glass-plate scans are <code>.tif</code> files thousands of pixels
+                  on a side, and their true displacements can be well over 100 pixels. A brute-force
+                  search over such a large window would be hopelessly slow &mdash; the cost grows with
+                  the square of the search range <em>and</em> the number of pixels scored.
+                </p>
+                <p>
+                  The fix is a <strong>coarse-to-fine image pyramid</strong>. I recursively downscale
+                  the image by a factor of two until it is small, estimate the alignment on the tiny
+                  coarse image (where a large displacement becomes a small one), then propagate that
+                  estimate down the pyramid &mdash; doubling it at each level and refining it with a
+                  small <code>[-10, 10]</code> local search. As in Part 1, I score only the cropped
+                  interior of each channel so the noisy borders don't corrupt the match.
+                </p>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:0px 16px 16px 16px;width:100%;vertical-align:middle">
+                <pre class="code"><code class="language-python">import skimage as sk
+
+def best_fit(im1, im2, matching_metric, shift_range, initial_shift, crop):
+    best_shift = (None, None)
+    best_score = -np.inf
+    x_shift, y_shift = initial_shift
+    for i in range(-shift_range + x_shift, shift_range + x_shift + 1):
+        for j in range(-shift_range + y_shift, shift_range + y_shift + 1):
+            shifted_im1 = shift_image(im1, (i, j))
+            if crop:
+                shifted_im1 = crop_image(shifted_im1, 200)
+                im2 = crop_image(im2, 200)
+            score = matching_metric(shifted_im1, im2)
+            if score > best_score:
+                best_shift = (i, j)
+                best_score = score
+    return best_shift
+
+def align(im1, im2, threshold=300):
+    # Image pyramid
+    if im1.shape[0] >= threshold:
+        small_im1 = sk.transform.rescale(im1, 0.5)
+        small_im2 = sk.transform.rescale(im2, 0.5)
+        i, j = align(small_im1, small_im2)
+        i *= 2
+        j *= 2
+    else:
+        i, j = (0, 0)
+
+    shift = best_fit(
+        im1, 
+        im2, 
+        matching_metric=ncc, 
+        shift_range=10,  
+        initial_shift=(i, j),
+        crop=True
+    )
+    return shift</code></pre>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:16px;width:100%;vertical-align:middle">
+                <p>
+                  With the pyramid, each high-resolution plate aligns in well under a minute. Below are
+                  my results on the provided example images, with the computed <em>(row, col)</em>
+                  displacement vectors listed beneath each one.
+                </p>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <!-- Provided image gallery -->
+          <table style="width:100%;border:0px;border-spacing:10px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="text-align:center;width:50%;vertical-align:top">
+                <img src="images/church.jpg" width="100%" alt="Church colorized"><br><strong>church</strong>
+                <br><span class="caption">G: <em>(24, 4)</em> &nbsp; R: <em>(58, -4)</em></span>
+              </td>
+              <td style="text-align:center;width:50%;vertical-align:top">
+                <img src="images/harvesters.jpg" width="100%" alt="Harvesters colorized"><br><strong>harvesters</strong>
+                <br><span class="caption">G: <em>(59, 19)</em> &nbsp; R: <em>(124, 18)</em></span>
+              </td>
+            </tr>
+            <tr>
+              <td style="text-align:center;width:50%;vertical-align:top">
+                <img src="images/icon.jpg" width="100%" alt="Icon colorized"><br><strong>icon</strong>
+                <br><span class="caption">G: <em>(41, 18)</em> &nbsp; R: <em>(89, 23)</em></span>
+              </td>
+              <td style="text-align:center;width:50%;vertical-align:top">
+                <img src="images/ilemselga.jpg" width="100%" alt="Ilemselga colorized"><br><strong>ilemselga</strong>
+                <br><span class="caption">G: <em>(41, 7)</em> &nbsp; R: <em>(131, 11)</em></span>
+              </td>
+            </tr>
+            <tr>
+              <td style="text-align:center;width:50%;vertical-align:top">
+                <img src="images/melons.jpg" width="100%" alt="Melons colorized"><br><strong>melons</strong>
+                <br><span class="caption">G: <em>(87, 0)</em> &nbsp; R: <em>(185, 2)</em></span>
+              </td>
+              <td style="text-align:center;width:50%;vertical-align:top">
+                <img src="images/religous_painting.jpg" width="100%" alt="Religious painting colorized"><br><strong>religous_painting</strong>
+                <br><span class="caption">G: <em>(27, 3)</em> &nbsp; R: <em>(69, 7)</em></span>
+              </td>
+            </tr>
+            <tr>
+              <td style="text-align:center;width:50%;vertical-align:top">
+                <img src="images/self_portrait.jpg" width="100%" alt="Self portrait colorized"><br><strong>self_portrait</strong>
+                <br><span class="caption">G: <em>(77, 29)</em> &nbsp; R: <em>(175, 37)</em></span>
+              </td>
+              <td style="text-align:center;width:50%;vertical-align:top">
+                <img src="images/siren.jpg" width="100%" alt="Siren colorized"><br><strong>siren</strong>
+                <br><span class="caption">G: <em>(49, -5)</em> &nbsp; R: <em>(96, -23)</em></span>
+              </td>
+            </tr>
+            <tr>
+              <td style="text-align:center;width:50%;vertical-align:top">
+                <img src="images/three_generations.jpg" width="100%" alt="Three generations colorized"><br><strong>three_generations</strong>
+                <br><span class="caption">G: <em>(49, 15)</em> &nbsp; R: <em>(108, 11)</em></span>
+              </td>
+              <td style="text-align:center;width:50%;vertical-align:top">
+                <img src="images/wharf.jpg" width="100%" alt="Wharf colorized"><br><strong>wharf</strong>
+                <br><span class="caption">G: <em>(15, -6)</em> &nbsp; R: <em>(81, -15)</em></span>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <!-- ===================== Emir failure case ===================== -->
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:16px;width:100%;vertical-align:middle">
+                <h2>A Failure Case: Emir of Bukhara</h2>
+                <p>
+                  One image does not align correctly with my basic pipeline. The green channel lines up,
+                  but the red channel lands at <em>(24, -4)</em> &mdash; less than half of the green
+                  channel's <em>(48, 23)</em>, when it should be roughly double. The result is the heavy
+                  red ghosting seen below.
+                </p>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="text-align:center;padding:16px;width:100%;vertical-align:middle">
+                <img src="images/emir.jpg" style="max-width:70%;height:auto;" alt="Emir colorized (misaligned)">
+                <br><strong>emir</strong>
+                <br><span class="caption">G: <em>(48, 23)</em> &nbsp; R: <em>(24, -4)</em> &nbsp;&mdash;&nbsp; the red channel is misaligned</span>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:0px 16px 16px 16px;width:100%;vertical-align:middle">
+                <p>
+                  The problem is that my metrics compare <em>raw pixel intensities</em>. The Emir's bright
+                  silk robe reflects very differently through the red, green, and blue filters, so the
+                  same region has very different brightness in each channel. NCC and L2 therefore find a
+                  false optimum for the red channel &mdash; it matches the overall brightness pattern
+                  rather than the true structure. The fix would be to align on <em>edges or gradients</em>
+                  (which are consistent across channels) instead of raw intensities.
+                </p>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <!-- ===================== Own images ===================== -->
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:16px;width:100%;vertical-align:middle">
+                <h2>My Own Selections</h2>
+                <p>
+                  Finally, I chose three additional plates from the
+                  <a href="https://www.loc.gov/collections/prokudin-gorskii/">Library of Congress
+                  Prokudin-Gorskii collection</a> and ran them through the same pyramid pipeline.
+                </p>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:10px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="text-align:center;width:33%;vertical-align:top">
+                <img src="images/cloth.jpg" width="100%" alt="Cloth colorized"><br><strong>cloth</strong>
+                <br><span class="caption">G: <em>(58, 54)</em> &nbsp; R: <em>(110, 83)</em></span>
+              </td>
+              <td style="text-align:center;width:33%;vertical-align:top">
+                <img src="images/napoleon.jpg" width="100%" alt="Napoleon colorized"><br><strong>napoleon</strong>
+                <br><span class="caption">G: <em>(63, 5)</em> &nbsp; R: <em>(132, -2)</em></span>
+              </td>
+              <td style="text-align:center;width:33%;vertical-align:top">
+                <img src="images/nice_hat.jpg" width="100%" alt="Nice hat colorized"><br><strong>nice_hat</strong>
+                <br><span class="caption">G: <em>(41, 6)</em> &nbsp; R: <em>(106, 1)</em></span>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <!-- ===================== Footer ===================== -->
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:0px">
+                <br>
+                <p style="text-align:right;font-size:small;">
+                  Website template from <a href="https://jonbarron.info/">Jon Barron</a>.
+                </p>
+              </td>
+            </tr>
+          </tbody></table>
+        </td>
+      </tr>
+    </tbody></table>
+    <script>hljs.highlightAll();</script>
+  </body>
+</html>
