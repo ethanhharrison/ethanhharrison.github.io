@@ -285,7 +285,7 @@ def best_fit(im1, im2, matching_metric, shift_range, crop=True):
               <td style="text-align:center;width:33%;vertical-align:top">
                 <img src="images/cathedral.jpg" width="100%" alt="Cathedral colorized">
                 <br><strong>cathedral</strong>
-                <br><span class="caption">G: <em>(5, 2)</em> &nbsp; R: <em>(10, 3)</em></span>
+                <br><span class="caption">G: <em>(5, 2)</em> &nbsp; R: <em>(12, 3)</em></span>
               </td>
               <td style="text-align:center;width:33%;vertical-align:top">
                 <img src="images/monastery.jpg" width="100%" alt="Monastery colorized">
@@ -296,6 +296,30 @@ def best_fit(im1, im2, matching_metric, shift_range, crop=True):
                 <img src="images/tobolsk.jpg" width="100%" alt="Tobolsk colorized">
                 <br><strong>tobolsk</strong>
                 <br><span class="caption">G: <em>(3, 3)</em> &nbsp; R: <em>(7, 3)</em></span>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:16px;width:100%;vertical-align:middle">
+                <p>
+                  The animation below walks through the entire single-scale process on
+                  <strong>cathedral</strong>: the plate is split into thirds and assigned to B, G, R,
+                  then the green channel is scanned over the fixed blue channel. The left panel is a
+                  red/cyan overlay (grey where the channels agree, colored fringing where they don't),
+                  and the right panel is the NCC score at every displacement, filling in as the search
+                  proceeds. The star marks the best match. The red channel is aligned the same way, and
+                  the animation finishes by sliding the three color filters together into the final image.
+                </p>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="text-align:center;padding:8px 16px 16px 16px;width:100%;vertical-align:middle">
+                <img src="images/naive_alignment.gif" width="100%" style="max-width:660px;" alt="Naive single-scale alignment animation">
               </td>
             </tr>
           </tbody></table>
@@ -364,6 +388,28 @@ def align(im1, im2, threshold=300):
         crop=True
     )
     return shift</code></pre>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:16px;width:100%;vertical-align:middle">
+                <p>
+                  The animation below shows the coarse-to-fine search on <strong>harvesters</strong>.
+                  The image is first downscaled into a pyramid; the alignment is estimated on the tiny
+                  coarsest level (where a 120-pixel shift becomes a handful of pixels), and that
+                  estimate is then doubled and refined with a small local search at each finer level
+                  until the full resolution is reached.
+                </p>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="text-align:center;padding:8px 16px 16px 16px;width:100%;vertical-align:middle">
+                <img src="images/pyramid_alignment.gif" width="100%" style="max-width:660px;" alt="Coarse-to-fine image pyramid alignment animation">
               </td>
             </tr>
           </tbody></table>
