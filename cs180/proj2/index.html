@@ -1,0 +1,1220 @@
+ <!DOCTYPE HTML>
+<html lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+    <title>CS180 Project 2 &mdash; Ethan Harrison</title>
+
+    <meta name="author" content="Ethan Harrison">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="shortcut icon" href="../../images/favicon/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" type="text/css" href="../../stylesheet.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
+    <style>
+      pre.code {
+        background-color: #f6f8fa;
+        border: 1px solid #e1e4e8;
+        border-radius: 8px;
+        padding: 14px 16px;
+        overflow-x: auto;
+        font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+        font-size: 12.5px;
+        line-height: 1.45;
+        color: #24292e;
+      }
+      pre.code code.hljs {
+        background: transparent;
+        padding: 0;
+        font-family: inherit;
+        font-size: inherit;
+      }
+      table.offsets {
+        border-collapse: collapse;
+        margin: 0 auto;
+        font-size: 14px;
+      }
+      table.offsets th, table.offsets td {
+        border: 1px solid #ddd;
+        padding: 6px 14px;
+        text-align: center;
+      }
+      table.offsets th {
+        background-color: #f6f8fa;
+        font-weight: 700;
+      }
+      .caption {
+        font-size: 13px;
+        color: #444;
+      }
+      h3 {
+        margin: 0 0 4px 0;
+        font-weight: normal;
+        font-family: 'Lato', Verdana, Helvetica, sans-serif;
+        font-size: 17px;
+      }
+      img.pixel {
+        image-rendering: pixelated;
+      }
+    </style>
+
+  </head>
+
+  <body>
+    <table style="width:100%;max-width:800px;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+      <tr style="padding:0px">
+        <td style="padding:0px">
+
+          <!-- ===================== Header ===================== -->
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr style="padding:0px">
+              <td style="padding:2.5%;width:100%;vertical-align:middle">
+                <p class="name" style="text-align: center;">
+                  Project 2: Fun with <br> Filters and Frequencies
+                </p>
+                <p style="text-align:center">
+                  <strong>E Harrison</strong> &nbsp;&mdash;&nbsp; CS180, Fall 2026
+                </p>
+                <p style="text-align:center">
+                  <a href="../index.html">CS180 Projects</a> &nbsp;/&nbsp;
+                  <a href="../../index.html">Home</a> &nbsp;/&nbsp;
+                  <a href="https://cal-cs180.github.io/fa26/hw/proj2/index.html">Assignment</a>
+                </p>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <!-- ===================== Overview ===================== -->
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:16px;width:100%;vertical-align:middle">
+                <h2>Overview</h2>
+                <p>
+                  This project explores what we can do with 2D convolution and the frequency content of
+                  images. In <strong>Part 1</strong> I implement convolution from scratch and use
+                  finite-difference and derivative-of-Gaussian filters to detect edges. In
+                  <strong>Part 2</strong> I use low- and high-pass filters to sharpen images, build
+                  <em>hybrid images</em> whose interpretation changes with viewing distance, and blend
+                  images seamlessly with Gaussian and Laplacian stacks.
+                </p>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <!-- =========================================================== -->
+          <!-- ===================== Part 1.1 ============================ -->
+          <!-- =========================================================== -->
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:16px;width:100%;vertical-align:middle">
+                <h2>Part 1: Fun with Filters</h2>
+                <br>
+                <h3>1.1 &nbsp;Convolutions from Scratch</h3>
+                <p>
+                  I wrote convolution two ways using only NumPy. The <strong>four-loop</strong> version
+                  iterates over every output pixel and, within that, over every kernel entry,
+                  accumulating the weighted sum by hand. The <strong>two-loop</strong> version keeps
+                  the loops over output pixels but replaces the inner two loops with a single dot
+                  product between the flattened kernel and the image patch beneath it.
+                </p>
+                <p>
+                  Both versions <em>flip</em> the kernel along both axes first (that is what makes this
+                  a convolution rather than a cross-correlation) and support zero padding in
+                  <code>"same"</code> mode (output matches the input size, padding by
+                  <code>(k&minus;1)/2</code>) and <code>"full"</code> mode (padding by
+                  <code>k&minus;1</code>, output grows by <code>k&minus;1</code>). With no padding they
+                  return the smaller &ldquo;valid&rdquo; output.
+                </p>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:0px 16px 16px 16px;width:100%;vertical-align:middle">
+                <pre class="code"><code class="language-python">import numpy as np
+
+def zero_padding(image, pad_x, pad_y):
+    w, h = image.shape
+    padded_image = np.zeros((w + 2 * pad_x, h + 2 * pad_y))
+    padded_image[pad_x:pad_x + w, pad_y:pad_y + h] = image
+    return padded_image
+
+def add_padding(image, kernel, padding):
+    kw, kh = kernel.shape
+    if padding == "same":
+        image = zero_padding(image, (kw - 1) // 2, (kh - 1) // 2)
+    elif padding == "full":
+        image = zero_padding(image, kw - 1, kh - 1)
+    return image
+
+def output_dims(image, kernel, padding):
+    w, h = image.shape
+    kw, kh = kernel.shape
+    if padding == "same":
+        return w, h
+    elif padding == "full":
+        return w + kw - 1, h + kh - 1
+    else:
+        return w - kw + 1, h - kh + 1
+
+def convolve_4loop(image, kernel, padding=None):
+    ow, oh = output_dims(image, kernel, padding)
+    if padding is not None:
+        image = add_padding(image, kernel, padding)
+    kw, kh = kernel.shape
+    kernel = np.flip(kernel, (0, 1))
+    convolved = np.zeros((ow, oh))
+    for i in range(ow):
+        for j in range(oh):
+            output = 0
+            for x in range(kw):
+                for y in range(kh):
+                    output += kernel[x, y] * image[i + x, j + y]
+            convolved[i, j] = output
+    return convolved
+
+def convolve_2loop(image, kernel, padding=None):
+    ow, oh = output_dims(image, kernel, padding)
+    if padding is not None:
+        image = add_padding(image, kernel, padding)
+    kw, kh = kernel.shape
+    kernel = np.flip(kernel, (0, 1))
+    convolved = np.zeros((ow, oh))
+    for i in range(ow):
+        for j in range(oh):
+            kernel_flat = kernel.flatten()
+            image_flat = image[i:i + kw, j:j + kh].flatten()
+            convolved[i, j] = np.dot(kernel_flat, image_flat)
+    return convolved</code></pre>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:16px;width:100%;vertical-align:middle">
+                <p>
+                  I tested all three implementations on a grayscale photo with a 9&times;9 box filter
+                  (every entry <code>1/81</code>) and the finite-difference operators
+                  <code>D<sub>x</sub> = [1, 0, &minus;1]</code> and
+                  <code>D<sub>y</sub> = [1, 0, &minus;1]<sup>T</sup></code>. The four-loop, two-loop,
+                  and <code>scipy.signal.convolve2d</code> outputs are identical, so only one set is
+                  shown below.
+                </p>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:10px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="text-align:center;width:50%;vertical-align:top">
+                <img src="images/goat_gray.jpg" width="100%" alt="Grayscale input">
+                <br><strong>Input (grayscale)</strong>
+              </td>
+              <td style="text-align:center;width:50%;vertical-align:top">
+                <img src="images/goat_box.jpg" width="100%" alt="9x9 box filter">
+                <br><strong>9&times;9 box filter</strong>
+              </td>
+            </tr>
+            <tr>
+              <td style="text-align:center;width:50%;vertical-align:top">
+                <img src="images/goat_dx.jpg" width="100%" alt="Dx">
+                <br><strong>Convolved with D<sub>x</sub></strong>
+              </td>
+              <td style="text-align:center;width:50%;vertical-align:top">
+                <img src="images/goat_dy.jpg" width="100%" alt="Dy">
+                <br><strong>Convolved with D<sub>y</sub></strong>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:16px;width:100%;vertical-align:middle">
+                <p>
+                  <strong>Runtime.</strong> I timed each implementation on the 542&times;540 cameraman
+                  image with the 9&times;9 box filter. The full-resolution photo above takes minutes
+                  with four loops.
+                </p>
+                <table class="offsets">
+                  <tr><th>Implementation</th><th>Time</th></tr>
+                  <tr><td>Four loops</td><td>5.63 s</td></tr>
+                  <tr><td>Two loops</td><td>0.44 s</td></tr>
+                  <tr><td><code>scipy.signal.convolve2d</code></td><td>0.038 s</td></tr>
+                </table>
+                <p>
+                  <strong>Boundary handling.</strong> My implementation zero-pads the image, which is
+                  exactly what <code>convolve2d</code> does by default (<code>boundary="fill"</code>,
+                  <code>fillvalue=0</code>). That is why the outputs agree to floating-point precision.
+                  Zero padding pulls black into the border pixels, so the box-filtered image has
+                  a slightly darkened frame.
+                </p>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <!-- ===================== Part 1.2 ===================== -->
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:16px;width:100%;vertical-align:middle">
+                <h3>1.2 &nbsp;Finite Difference Operator</h3>
+                <p>
+                  Convolving the cameraman image with <code>D<sub>x</sub></code> and
+                  <code>D<sub>y</sub></code> gives the partial derivatives
+                  <code>&part;I/&part;x</code> and <code>&part;I/&part;y</code>, which respond to
+                  vertical and horizontal edges respectively. Combining them gives the gradient
+                  magnitude <code>&radic;((&part;I/&part;x)&sup2; + (&part;I/&part;y)&sup2;)</code>,
+                  which is large wherever intensity changes quickly in <em>any</em> direction.
+                  Thresholding the magnitude produces a binary edge map.
+                </p>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:0px 16px 16px 16px;width:100%;vertical-align:middle">
+                <pre class="code"><code class="language-python">def edge_detection(image, threshold, dx_kernel=None, dy_kernel=None):
+    if dx_kernel is None:
+        dx_kernel = np.array([[1, 0, -1]])
+    if dy_kernel is None:
+        dy_kernel = np.array([[1], [0], [-1]])
+    dx_image = signal.convolve2d(image, dx_kernel, mode="same")
+    dy_image = signal.convolve2d(image, dy_kernel, mode="same")
+    grad_mag_image = np.sqrt(np.square(dx_image) + np.square(dy_image))
+    edge_image = np.where(grad_mag_image &gt; threshold, 255.0, 0.0)
+    return grad_mag_image, edge_image
+
+grad_mag_image, edge_image = edge_detection(cameraman, threshold=90)</code></pre>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:10px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="text-align:center;width:33%;vertical-align:top">
+                <img src="images/cameraman.jpg" width="100%" alt="Cameraman">
+                <br><strong>Original</strong>
+              </td>
+              <td style="text-align:center;width:33%;vertical-align:top">
+                <img src="images/cameraman_dx.jpg" width="100%" alt="dI/dx">
+                <br><strong>&part;I/&part;x</strong>
+              </td>
+              <td style="text-align:center;width:33%;vertical-align:top">
+                <img src="images/cameraman_dy.jpg" width="100%" alt="dI/dy">
+                <br><strong>&part;I/&part;y</strong>
+              </td>
+            </tr>
+          </tbody></table>
+          <table style="width:67%;border:0px;border-spacing:10px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="text-align:center;width:50%;vertical-align:top">
+                <img src="images/cameraman_grad_mag.jpg" width="100%" alt="Gradient magnitude">
+                <br><strong>Gradient magnitude</strong>
+              </td>
+              <td style="text-align:center;width:50%;vertical-align:top">
+                <img src="images/cameraman_edges.jpg" width="100%" alt="Binarized edges">
+                <br><strong>Edges (threshold = 90)</strong>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:0px 16px 16px 16px;width:100%;vertical-align:middle">
+                <p class="caption"><em>
+                  Partial derivatives are shown with 0 mapped to mid-gray: bright means a positive
+                  response and dark means negative.
+                </em></p>
+                <p>
+                  <strong>Choosing the threshold.</strong> The threshold trades noise for missed
+                  edges. The grass in the lower half is full of small, high-frequency texture that
+                  produces many weak gradient responses. A low threshold keeps those responses and
+                  speckles the ground with false edges. A high threshold erases the thinner tripod
+                  legs and the faint buildings in the background. I chose <strong>90</strong> by eye.
+                  At that value the cameraman, camera, and tripod keep clear outlines, and most of
+                  the grass noise is suppressed.
+                </p>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <!-- ===================== Part 1.3 ===================== -->
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:16px;width:100%;vertical-align:middle">
+                <h3>1.3 &nbsp;Derivative of Gaussian (DoG) Filter</h3>
+                <p>
+                  The finite-difference edges are noisy because differentiation amplifies high
+                  frequencies. The fix is to smooth first. I built a 2D Gaussian
+                  (<code>ksize=9</code>, <code>&sigma;=3</code>) by taking the outer product of a 1D
+                  <code>cv2.getGaussianKernel</code> with itself, blurred the cameraman, and then
+                  repeated the gradient pipeline from 1.2.
+                </p>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:0px 16px 16px 16px;width:100%;vertical-align:middle">
+                <pre class="code"><code class="language-python">def gaussian_kernel(ksize, sigma):
+    gaussian_1d = cv2.getGaussianKernel(ksize=ksize, sigma=sigma)
+    return gaussian_1d @ gaussian_1d.T
+
+gaussian = gaussian_kernel(ksize=9, sigma=3)
+dx_kernel, dy_kernel = np.array([[1, 0, -1]]), np.array([[1], [0], [-1]])
+
+# (a) two convolutions: blur, then take finite differences
+blurred_image = signal.convolve2d(image, gaussian, mode="same")
+grad_mag, edges = edge_detection(blurred_image, threshold=20)
+
+# (b) one convolution: fold the derivative into the Gaussian (DoG filters)
+gaussian_dx_kernel = signal.convolve2d(gaussian, dx_kernel)
+gaussian_dy_kernel = signal.convolve2d(gaussian, dy_kernel)
+grad_mag_1conv, edges_1conv = edge_detection(
+    image, threshold=20, dx_kernel=gaussian_dx_kernel, dy_kernel=gaussian_dy_kernel
+)</code></pre>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:0px 16px;width:100%;vertical-align:middle">
+                <p><strong>(a) Blur, then differentiate</strong></p>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:10px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="text-align:center;width:33%;vertical-align:top">
+                <img src="images/cameraman_blurred.jpg" width="100%" alt="Blurred cameraman">
+                <br><strong>Blurred</strong>
+              </td>
+              <td style="text-align:center;width:33%;vertical-align:top">
+                <img src="images/cameraman_blurred_dx.jpg" width="100%" alt="Blurred dI/dx">
+                <br><strong>&part;/&part;x of blurred</strong>
+              </td>
+              <td style="text-align:center;width:33%;vertical-align:top">
+                <img src="images/cameraman_blurred_dy.jpg" width="100%" alt="Blurred dI/dy">
+                <br><strong>&part;/&part;y of blurred</strong>
+              </td>
+            </tr>
+          </tbody></table>
+          <table style="width:67%;border:0px;border-spacing:10px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="text-align:center;width:50%;vertical-align:top">
+                <img src="images/cameraman_blurred_grad_mag.jpg" width="100%" alt="Blurred gradient magnitude">
+                <br><strong>Gradient magnitude</strong>
+              </td>
+              <td style="text-align:center;width:50%;vertical-align:top">
+                <img src="images/cameraman_blurred_edges.jpg" width="100%" alt="Blurred edges">
+                <br><strong>Edges (threshold = 20)</strong>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:16px;width:100%;vertical-align:middle">
+                <p>
+                  <strong>What differences do you see?</strong> Compared with the plain finite
+                  differences in 1.2, the edges are far cleaner. The grass noise is almost entirely
+                  gone, and the outlines are <em>thicker</em>, <em>smoother</em>, and more continuous
+                  because the blur spreads each edge over several pixels. The price is lost fine
+                  detail: small structures such as the thin tripod features and the distant buildings
+                  become weaker or merge together. Smoothing also lowers the overall gradient values,
+                  so the threshold had to drop from 90 to <strong>20</strong>.
+                </p>
+                <p><strong>(b) A single convolution with DoG filters</strong></p>
+                <p>
+                  Convolution is associative, so
+                  <code>D<sub>x</sub> * (G * I) = (D<sub>x</sub> * G) * I</code>. Convolving the
+                  Gaussian with <code>D<sub>x</sub></code> and <code>D<sub>y</sub></code> once
+                  produces two <em>derivative of Gaussian</em> filters that blur and differentiate in a
+                  single pass.
+                </p>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:10px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="text-align:center;width:25%;vertical-align:top">
+                <img src="images/dog_x.png" class="pixel" width="100%" alt="DoG x filter">
+                <br><strong>DoG<sub>x</sub></strong>
+              </td>
+              <td style="text-align:center;width:25%;vertical-align:top">
+                <img src="images/dog_y.png" class="pixel" width="100%" alt="DoG y filter">
+                <br><strong>DoG<sub>y</sub></strong>
+              </td>
+              <td style="text-align:center;width:25%;vertical-align:top">
+                <img src="images/cameraman_blurred_grad_mag_1conv.jpg" width="100%" alt="DoG gradient magnitude">
+                <br><strong>Gradient magnitude (DoG)</strong>
+              </td>
+              <td style="text-align:center;width:25%;vertical-align:top">
+                <img src="images/cameraman_blurred_edges_1conv.jpg" width="100%" alt="DoG edges">
+                <br><strong>Edges (DoG, threshold = 20)</strong>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:16px;width:100%;vertical-align:middle">
+                <p>
+                  The DoG results match the two-step results. Away from the image border, the gradient
+                  magnitudes from (a) and (b) differ by at most about 10<sup>&minus;13</sup>, which is
+                  floating-point round-off. Small differences can appear only within a few pixels of
+                  the frame edge, where zero padding is applied once in (b) but twice in (a).
+                </p>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <!-- =========================================================== -->
+          <!-- ===================== Part 2.1 ============================ -->
+          <!-- =========================================================== -->
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:16px;width:100%;vertical-align:middle">
+                <h2>Part 2: Fun with Frequencies</h2>
+                <br>
+                <h3>2.1 &nbsp;Image &ldquo;Sharpening&rdquo;</h3>
+                <p>
+                  A Gaussian is a low-pass filter, so subtracting a blurred image from the original
+                  leaves only its <strong>high frequencies</strong>: the edges and fine texture.
+                  Adding a scaled copy of those high frequencies back makes the image look
+                  sharper:
+                </p>
+                <p style="text-align:center">
+                  <code>sharpened = I + &alpha;(I &minus; G * I) = ((1 + &alpha;)e &minus; &alpha;G) * I</code>
+                </p>
+                <p>
+                  Here <code>e</code> is the unit impulse (identity kernel). The right-hand side shows
+                  that the whole operation collapses into a single convolution with the
+                  <strong>unsharp mask filter</strong> <code>(1 + &alpha;)e &minus; &alpha;G</code>.
+                </p>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:0px 16px 16px 16px;width:100%;vertical-align:middle">
+                <pre class="code"><code class="language-python">def unsharp_mask_filter(ksize, sigma, alpha):
+    blur_kernel = gaussian_kernel(ksize=ksize, sigma=sigma)
+    identity_kernel = np.zeros((ksize, ksize))
+    identity_kernel[(ksize - 1) // 2, (ksize - 1) // 2] = 1.0
+    return (1 + alpha) * identity_kernel - alpha * blur_kernel
+
+unsharp_kernel = unsharp_mask_filter(ksize=15, sigma=5, alpha=3)
+sharpened_image = signal.convolve2d(image, unsharp_kernel, mode="same")</code></pre>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:10px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="text-align:center;width:25%;vertical-align:top">
+                <img src="images/taj_gray.jpg" width="100%" alt="Taj original">
+                <br><strong>Original</strong>
+              </td>
+              <td style="text-align:center;width:25%;vertical-align:top">
+                <img src="images/taj_blurred.jpg" width="100%" alt="Taj blurred">
+                <br><strong>Blurred (low freq.)</strong>
+              </td>
+              <td style="text-align:center;width:25%;vertical-align:top">
+                <img src="images/taj_high_freq.jpg" width="100%" alt="Taj high frequencies">
+                <br><strong>High frequencies</strong>
+              </td>
+              <td style="text-align:center;width:25%;vertical-align:top">
+                <img src="images/taj_sharpened.jpg" width="100%" alt="Taj sharpened">
+                <br><strong>Sharpened (&alpha; = 3)</strong>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:0px 16px 16px 16px;width:100%;vertical-align:middle">
+                <p class="caption"><em>
+                  Gaussian: <code>ksize=15</code>, <code>&sigma;=5</code>. The high-frequency image is
+                  amplified 4&times; and offset to mid-gray for visibility.
+                </em></p>
+                <p>
+                  <strong>Varying the sharpening amount.</strong> Increasing &alpha; boosts the
+                  high frequencies further. Small values make the carvings on the dome crisper. Large
+                  values over-sharpen: bright/dark halos appear around every edge (see the dome
+                  against the sky and the dark cypress trees), and noise in the sky starts to show.
+                </p>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:10px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="text-align:center;width:25%;vertical-align:top">
+                <img src="images/taj_alpha_0.5.jpg" width="100%" alt="alpha 0.5">
+                <br><strong>&alpha; = 0.5</strong>
+              </td>
+              <td style="text-align:center;width:25%;vertical-align:top">
+                <img src="images/taj_alpha_1.jpg" width="100%" alt="alpha 1">
+                <br><strong>&alpha; = 1</strong>
+              </td>
+              <td style="text-align:center;width:25%;vertical-align:top">
+                <img src="images/taj_alpha_3.jpg" width="100%" alt="alpha 3">
+                <br><strong>&alpha; = 3</strong>
+              </td>
+              <td style="text-align:center;width:25%;vertical-align:top">
+                <img src="images/taj_alpha_6.jpg" width="100%" alt="alpha 6">
+                <br><strong>&alpha; = 6</strong>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:16px;width:100%;vertical-align:middle">
+                <p>
+                  <strong>Another image.</strong> Next I applied the unsharp mask to the photo from
+                  Part 1.1. This image is much larger than the Taj Mahal (1200 px wide as processed),
+                  so the <code>ksize=15</code>, <code>&sigma;=5</code> Gaussian only picks up very
+                  fine detail, and the sharpening is hard to see at normal viewing size. I increased
+                  the Gaussian to <code>ksize=31</code>, <code>&sigma;=10</code>. That moves more
+                  mid-frequency structure into the &ldquo;high-frequency&rdquo; band, so faces, jersey
+                  lettering, and the folds of clothing get visibly more contrast.
+                </p>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:10px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="text-align:center;width:33%;vertical-align:top">
+                <img src="images/goat_gray.jpg" width="100%" alt="Original">
+                <br><strong>Original</strong>
+              </td>
+              <td style="text-align:center;width:33%;vertical-align:top">
+                <img src="images/goat_blurred.jpg" width="100%" alt="Blurred">
+                <br><strong>Blurred (low freq.)</strong>
+              </td>
+              <td style="text-align:center;width:33%;vertical-align:top">
+                <img src="images/goat_high_freq.jpg" width="100%" alt="High frequencies">
+                <br><strong>High frequencies</strong>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:0px 16px 8px 16px;width:100%;vertical-align:middle">
+                <p class="caption"><em>
+                  Gaussian: <code>ksize=31</code>, <code>&sigma;=10</code>. The high-frequency image is
+                  amplified 2&times; and offset to mid-gray for visibility.
+                </em></p>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:10px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="text-align:center;width:50%;vertical-align:top">
+                <img src="images/goat_alpha_0.5.jpg" width="100%" alt="alpha 0.5">
+                <br><strong>&alpha; = 0.5</strong>
+              </td>
+              <td style="text-align:center;width:50%;vertical-align:top">
+                <img src="images/goat_alpha_1.jpg" width="100%" alt="alpha 1">
+                <br><strong>&alpha; = 1</strong>
+              </td>
+            </tr>
+            <tr>
+              <td style="text-align:center;width:50%;vertical-align:top">
+                <img src="images/goat_alpha_2.jpg" width="100%" alt="alpha 2">
+                <br><strong>&alpha; = 2</strong>
+              </td>
+              <td style="text-align:center;width:50%;vertical-align:top">
+                <img src="images/goat_alpha_4.jpg" width="100%" alt="alpha 4">
+                <br><strong>&alpha; = 4</strong>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:0px 16px 16px 16px;width:100%;vertical-align:middle">
+                <p>
+                  As with the Taj Mahal, small &alpha; gives a subtle boost in clarity. By &alpha; = 4
+                  the image is clearly over-processed: the white shoes and towels clip to pure white,
+                  the dark clothing clips to black, and bright halos surround the players.
+                </p>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:16px;width:100%;vertical-align:middle">
+                <p>
+                  <strong>Blur, then re-sharpen.</strong> To test whether sharpening actually
+                  restores lost detail, I took the sharp Taj Mahal, blurred it with the same
+                  Gaussian, and then applied the unsharp mask (&alpha; = 3) again.
+                </p>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:10px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="text-align:center;width:33%;vertical-align:top">
+                <img src="images/taj_sharpened.jpg" width="100%" alt="Sharp">
+                <br><strong>Sharp</strong>
+              </td>
+              <td style="text-align:center;width:33%;vertical-align:top">
+                <img src="images/taj_sharpened_then_blurred.jpg" width="100%" alt="Blurred">
+                <br><strong>Blurred</strong>
+              </td>
+              <td style="text-align:center;width:33%;vertical-align:top">
+                <img src="images/taj_resharpened.jpg" width="100%" alt="Re-sharpened">
+                <br><strong>Re-sharpened</strong>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:0px 16px 16px 16px;width:100%;vertical-align:middle">
+                <p>
+                  The re-sharpened image is <em>not</em> the original. Re-sharpening restores contrast
+                  at large-scale edges such as the dome silhouette, the minarets, and the tree line,
+                  but the fine detail (the carvings and window tracery) does not come back. It also
+                  adds strong ringing halos around every edge. The &sigma; = 5 blur drove those high
+                  frequencies to nearly zero, and sharpening can only amplify frequencies that are
+                  still present. So &ldquo;sharpening&rdquo; is a perceptual trick that raises edge
+                  contrast; it does not recover lost information.
+                </p>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <!-- ===================== Part 2.2 ===================== -->
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:16px;width:100%;vertical-align:middle">
+                <h3>2.2 &nbsp;Hybrid Images</h3>
+                <p>
+                  A <a href="http://olivalab.mit.edu/publications/OlivaTorralb_Hybrid_Siggraph06.pdf">hybrid
+                  image</a> combines the <strong>low frequencies</strong> of one image with the
+                  <strong>high frequencies</strong> of another. Up close, the high frequencies dominate
+                  what we see. From far away (or when the image is small), only the low frequencies
+                  survive, so the interpretation flips.
+                </p>
+                <p>
+                  After aligning the two images on two hand-picked points, I low-pass the first image
+                  with a Gaussian of standard deviation <code>&sigma;<sub>low</sub></code> and high-pass
+                  the second with an impulse-minus-Gaussian filter of
+                  <code>&sigma;<sub>high</sub></code>, then average the two.
+                </p>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:0px 16px 16px 16px;width:100%;vertical-align:middle">
+                <pre class="code"><code class="language-python">def highpass_kernel(ksize, sigma):
+    blur_kernel = gaussian_kernel(ksize=ksize, sigma=sigma)
+    identity_kernel = np.zeros((ksize, ksize))
+    identity_kernel[(ksize - 1) // 2, (ksize - 1) // 2] = 1.0
+    return identity_kernel - blur_kernel
+
+def hybrid_image(im1, im2, low_sig, high_sig, ksize=9):
+    low_freq_kernel = gaussian_kernel(ksize=ksize, sigma=low_sig)
+    high_freq_kernel = highpass_kernel(ksize=ksize, sigma=high_sig)
+    low_freq_img = signal.convolve2d(im1, low_freq_kernel, mode="same")
+    high_freq_img = signal.convolve2d(im2, high_freq_kernel, mode="same")
+
+    w = min(low_freq_img.shape[0], high_freq_img.shape[0])
+    h = min(low_freq_img.shape[1], high_freq_img.shape[1])
+    low_freq_img = crop_image(low_freq_img, w, h)
+    high_freq_img = crop_image(high_freq_img, w, h)
+    return (low_freq_img + high_freq_img) / 2
+
+def fourier(img):
+    return np.log(np.abs(np.fft.fftshift(np.fft.fft2(img))))</code></pre>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:16px;width:100%;vertical-align:middle">
+                <p>
+                  <strong>Full process: Oski + Stanford Tree.</strong> Up close you see the Stanford
+                  Tree; step back and it turns into Oski. Oski supplies the low frequencies and the
+                  Tree supplies the high frequencies, both with <code>&sigma; = 4</code>
+                  (<code>ksize = 9</code>).
+                </p>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:10px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="text-align:center;width:33%;vertical-align:top">
+                <img src="images/oski.jpg" width="100%" alt="Oski">
+                <br><strong>Oski (low-pass input)</strong>
+              </td>
+              <td style="text-align:center;width:33%;vertical-align:top">
+                <img src="images/tree.jpg" width="100%" alt="Tree">
+                <br><strong>Tree (high-pass input)</strong>
+              </td>
+              <td style="text-align:center;width:33%;vertical-align:top">
+                <img src="images/hybrid_oski_tree.jpg" width="100%" alt="Oski/Tree hybrid">
+                <br><strong>Hybrid</strong>
+              </td>
+            </tr>
+            <tr>
+              <td style="text-align:center;width:33%;vertical-align:top">
+                <img src="images/oski_fourier.jpg" width="100%" alt="Oski FFT">
+                <br><span class="caption">FFT: Oski (aligned)</span>
+              </td>
+              <td style="text-align:center;width:33%;vertical-align:top">
+                <img src="images/tree_fourier.jpg" width="100%" alt="Tree FFT">
+                <br><span class="caption">FFT: Tree (aligned)</span>
+              </td>
+              <td></td>
+            </tr>
+            <tr>
+              <td style="text-align:center;width:33%;vertical-align:top">
+                <img src="images/oski_low_freq_fourier.jpg" width="100%" alt="Oski low-pass FFT">
+                <br><span class="caption">FFT: Oski, low-passed</span>
+              </td>
+              <td style="text-align:center;width:33%;vertical-align:top">
+                <img src="images/tree_high_freq_fourier.jpg" width="100%" alt="Tree high-pass FFT">
+                <br><span class="caption">FFT: Tree, high-passed</span>
+              </td>
+              <td style="text-align:center;width:33%;vertical-align:top">
+                <img src="images/hybrid_oski_tree_fourier.jpg" width="100%" alt="Hybrid FFT">
+                <br><span class="caption">FFT: Hybrid</span>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:0px 16px 16px 16px;width:100%;vertical-align:middle">
+                <p>
+                  The log-magnitude spectra show the filtering directly. Low-passing Oski dims
+                  everything away from the center of the spectrum, keeping only the coarse shape.
+                  High-passing the Tree removes the bright central peak while keeping the outer
+                  frequencies. The hybrid's spectrum is the sum of the two: a strong center from Oski
+                  surrounded by the Tree's high-frequency energy.
+                </p>
+                <p>
+                  <strong>Choosing the cutoffs.</strong> A Gaussian with spatial standard deviation
+                  &sigma; has a frequency-domain standard deviation of roughly
+                  <code>1/(2&pi;&sigma;)</code> cycles per pixel, so a larger &sigma; means a lower
+                  cutoff. I tuned &sigma;<sub>low</sub> and &sigma;<sub>high</sub> for each pair by eye.
+                  &sigma;<sub>low</sub> has to be large enough that the low-frequency image
+                  disappears up close, but not so large that it is unrecognizable from a distance.
+                  &sigma;<sub>high</sub> has to be large enough that the high-pass image keeps enough
+                  structure to be readable, while still removing its low-frequency shading, which
+                  would otherwise compete with the other image. Larger, higher-resolution images such
+                  as Derek + Nutmeg needed larger &sigma; values (and a larger kernel) than the small
+                  Oski and Tree images.
+                </p>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:16px;width:100%;vertical-align:middle">
+                <p><strong>More hybrids.</strong> In each row, the left image provides the low
+                frequencies and the middle image provides the high frequencies.</p>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:10px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="text-align:center;width:33%;vertical-align:middle">
+                <img src="images/derek.jpg" width="100%" alt="Derek">
+                <br><strong>Derek</strong>
+              </td>
+              <td style="text-align:center;width:33%;vertical-align:middle">
+                <img src="images/nutmeg.jpg" width="100%" alt="Nutmeg">
+                <br><strong>Nutmeg</strong>
+              </td>
+              <td style="text-align:center;width:33%;vertical-align:middle">
+                <img src="images/hybrid_derek_nutmeg.jpg" width="100%" alt="Derek/Nutmeg hybrid">
+                <br><strong>Derek + Nutmeg</strong>
+                <br><span class="caption">&sigma;<sub>low</sub>=8, &sigma;<sub>high</sub>=5, ksize=25</span>
+              </td>
+            </tr>
+            <tr>
+              <td style="text-align:center;width:33%;vertical-align:middle">
+                <img src="images/alyosha.jpg" width="100%" alt="Alyosha">
+                <br><strong>Alyosha Efros</strong>
+              </td>
+              <td style="text-align:center;width:33%;vertical-align:middle">
+                <img src="images/ren.jpg" width="100%" alt="Ren">
+                <br><strong>Ren Ng</strong>
+              </td>
+              <td style="text-align:center;width:33%;vertical-align:middle">
+                <img src="images/hybrid_alyosha_ren.jpg" width="100%" alt="Alyosha/Ren hybrid">
+                <br><strong>Alyosha + Ren</strong>
+                <br><span class="caption">&sigma;<sub>low</sub>=6, &sigma;<sub>high</sub>=5, ksize=25</span>
+              </td>
+            </tr>
+            <tr>
+              <td style="text-align:center;width:33%;vertical-align:middle">
+                <img src="images/penguin.jpg" width="100%" alt="Penguin">
+                <br><strong>Penguin</strong>
+              </td>
+              <td style="text-align:center;width:33%;vertical-align:middle">
+                <img src="images/albatross.jpg" width="100%" alt="Albatross">
+                <br><strong>Albatross</strong>
+              </td>
+              <td style="text-align:center;width:33%;vertical-align:middle">
+                <img src="images/hybrid_penguin_albatross.jpg" width="100%" alt="Penguin/Albatross hybrid">
+                <br><strong>Penguin + Albatross</strong>
+                <br><span class="caption">&sigma;<sub>low</sub>=5, &sigma;<sub>high</sub>=5, ksize=9</span>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <!-- ===================== Part 2.3 ===================== -->
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:16px;width:100%;vertical-align:middle">
+                <h3>2.3 &nbsp;Gaussian and Laplacian Stacks</h3>
+                <p>
+                  A <strong>Gaussian stack</strong> is like a Gaussian pyramid without the
+                  downsampling. Each level is the previous level blurred again, so every level keeps
+                  the original resolution. A <strong>Laplacian stack</strong> takes the difference of
+                  consecutive Gaussian levels, which isolates one frequency band per level. The
+                  last Gaussian level is kept as a low-frequency residual, so summing all
+                  Laplacian levels plus the residual reconstructs the original image exactly. Both are
+                  implemented from scratch with <code>convolve2d</code> on each color channel.
+                </p>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:0px 16px 16px 16px;width:100%;vertical-align:middle">
+                <pre class="code"><code class="language-python">def gaussian_stack(img, sigma, stack_height, ksize=9):
+    w, h, c = img.shape
+    kernel = gaussian_kernel(ksize=ksize, sigma=sigma)
+    stack = np.zeros((stack_height, w, h, c))
+    stack[0] = img
+    for i in range(1, stack_height):
+        for j in range(c):
+            stack[i, ..., j] = signal.convolve2d(stack[i-1, ..., j], kernel, mode="same")
+    return stack
+
+def laplacian_stack(img, sigma, stack_height, ksize=9):
+    gauss_stack = gaussian_stack(img, sigma, stack_height + 1, ksize=ksize)
+    stack = gauss_stack[:-1] - gauss_stack[1:]
+    return stack, gauss_stack[-1]   # band-pass levels + low-frequency residual</code></pre>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:16px;width:100%;vertical-align:middle">
+                <p>
+                  Below is my recreation of Figure 3.42 from Szeliski. I built 5-level Laplacian
+                  stacks (<code>&sigma;=3</code>, <code>ksize=19</code>) of the apple and orange and a
+                  Gaussian stack (<code>&sigma;=6</code>, <code>ksize=37</code>) of a vertical step
+                  mask. Each row shows level <em>i</em> of the apple weighted by mask level
+                  <em>i</em>, the orange weighted by <code>1 &minus;</code> mask level <em>i</em>,
+                  and their sum. The bottom row shows the collapsed stacks. The mask becomes blurrier
+                  at each level, so low frequencies are blended over a wide seam and high frequencies
+                  over a narrow one.
+                </p>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:10px;border-collapse:separate;margin-right:auto;margin-left:auto;max-width:600px;"><tbody>
+            <tr>
+              <th style="width:33%">Apple</th><th style="width:33%">Orange</th><th style="width:33%">Blended</th>
+            </tr>
+            <tr>
+              <td><img src="images/apple_laplacian_stack_0.jpg" width="100%" alt="apple level 0"></td>
+              <td><img src="images/orange_laplacian_stack_0.jpg" width="100%" alt="orange level 0"></td>
+              <td><img src="images/oraple_laplacian_stack_0.jpg" width="100%" alt="oraple level 0"></td>
+            </tr>
+            <tr><td colspan="3" style="text-align:center" class="caption">Level 0</td></tr>
+            <tr>
+              <td><img src="images/apple_laplacian_stack_2.jpg" width="100%" alt="apple level 2"></td>
+              <td><img src="images/orange_laplacian_stack_2.jpg" width="100%" alt="orange level 2"></td>
+              <td><img src="images/oraple_laplacian_stack_2.jpg" width="100%" alt="oraple level 2"></td>
+            </tr>
+            <tr><td colspan="3" style="text-align:center" class="caption">Level 2</td></tr>
+            <tr>
+              <td><img src="images/apple_laplacian_stack_4.jpg" width="100%" alt="apple level 4"></td>
+              <td><img src="images/orange_laplacian_stack_4.jpg" width="100%" alt="orange level 4"></td>
+              <td><img src="images/oraple_laplacian_stack_4.jpg" width="100%" alt="oraple level 4"></td>
+            </tr>
+            <tr><td colspan="3" style="text-align:center" class="caption">Level 4</td></tr>
+            <tr>
+              <td><img src="images/apple_blend.jpg" width="100%" alt="apple collapsed"></td>
+              <td><img src="images/orange_blend.jpg" width="100%" alt="orange collapsed"></td>
+              <td><img src="images/oraple_blend.jpg" width="100%" alt="oraple collapsed"></td>
+            </tr>
+            <tr><td colspan="3" style="text-align:center" class="caption">Collapsed (sum of all levels + residual)</td></tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:0px 16px 16px 16px;width:100%;vertical-align:middle">
+                <p class="caption"><em>
+                  Laplacian levels are visualized with a contrast gain of 3 and an offset of +70 so the
+                  zero-centered band-pass detail is visible. The mask stack is built at twice the image
+                  size and center-cropped so zero padding at the borders doesn't bleed into the mask.
+                </em></p>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <!-- ===================== Part 2.4 ===================== -->
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:16px;width:100%;vertical-align:middle">
+                <h3>2.4 &nbsp;Multiresolution Blending</h3>
+                <p>
+                  Following Burt and Adelson (1983), I blend two images by combining their Laplacian
+                  stacks band by band, using a Gaussian stack of the mask as the per-band weights:
+                </p>
+                <p style="text-align:center">
+                  <code>LS<sub>i</sub> = GM<sub>i</sub> &middot; LA<sub>i</sub> + (1 &minus; GM<sub>i</sub>) &middot; LB<sub>i</sub></code>
+                </p>
+                <p>
+                  Summing the blended levels (plus the blended low-frequency residuals) gives the
+                  final image. The mask can be any shape: a vertical step for the oraple, or a
+                  hand-drawn irregular region.
+                </p>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:0px 16px 16px 16px;width:100%;vertical-align:middle">
+                <pre class="code"><code class="language-python">def blended_image(im1, im2, mask, sigma, stack_height, ksize=9):
+    lstack1, res1 = laplacian_stack(im1, sigma, stack_height, ksize=ksize)
+    lstack2, res2 = laplacian_stack(im2, sigma, stack_height, ksize=ksize)
+    mstack = gaussian_stack(mask, 6, stack_height + 1, ksize=37)
+
+    # start with the blended low-frequency residuals
+    m = mstack[-1]
+    blended = m * res1 + (1 - m) * res2
+
+    # add each blended band-pass level
+    for i in range(stack_height):
+        m = mstack[i]
+        blended += m * lstack1[i] + (1 - m) * lstack2[i]
+    return blended</code></pre>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:16px;width:100%;vertical-align:middle">
+                <p>
+                  <strong>The Oraple.</strong> With a vertical step mask, simply pasting the halves
+                  together leaves a hard, obvious seam. The multiresolution blend (10 levels,
+                  <code>&sigma;=3</code>) hides it: the colors fade smoothly while the textures
+                  still change over a narrow band.
+                </p>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:10px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="text-align:center;width:20%;vertical-align:top">
+                <img src="images/apple.jpg" width="100%" alt="Apple">
+                <br><strong>Apple</strong>
+              </td>
+              <td style="text-align:center;width:20%;vertical-align:top">
+                <img src="images/orange.jpg" width="100%" alt="Orange">
+                <br><strong>Orange</strong>
+              </td>
+              <td style="text-align:center;width:20%;vertical-align:top">
+                <img src="images/vertical_mask.jpg" width="100%" style="border:1px solid #ddd;box-sizing:border-box;" alt="Vertical mask">
+                <br><strong>Mask</strong>
+              </td>
+              <td style="text-align:center;width:20%;vertical-align:top">
+                <img src="images/oraple_baseline.jpg" width="100%" alt="Oraple hard seam">
+                <br><strong>Hard seam</strong>
+              </td>
+              <td style="text-align:center;width:20%;vertical-align:top">
+                <img src="images/oraple.jpg" width="100%" alt="Oraple blended">
+                <br><strong>Blended</strong>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:16px;width:100%;vertical-align:middle">
+                <p>
+                  <strong>XStation 5.</strong> Here I merge an Xbox controller into a PS5 controller
+                  with an irregular mask. The mask selects the Xbox's face buttons, thumbsticks, and
+                  grips and places them on the PS5 body. The blend smooths the differences in
+                  shading and white balance between the two controllers along the seam.
+                </p>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:10px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="text-align:center;width:20%;vertical-align:top">
+                <img src="images/xbox.jpg" width="100%" alt="Xbox controller">
+                <br><strong>Xbox</strong>
+              </td>
+              <td style="text-align:center;width:20%;vertical-align:top">
+                <img src="images/ps5.jpg" width="100%" alt="PS5 controller">
+                <br><strong>PS5</strong>
+              </td>
+              <td style="text-align:center;width:20%;vertical-align:top">
+                <img src="images/xbox_mask.jpg" width="100%" alt="Controller mask">
+                <br><strong>Mask</strong>
+              </td>
+              <td style="text-align:center;width:20%;vertical-align:top">
+                <img src="images/xbox_ps5_baseline.jpg" width="100%" alt="Hard seam">
+                <br><strong>Hard seam</strong>
+              </td>
+              <td style="text-align:center;width:20%;vertical-align:top">
+                <img src="images/xbox_ps5_blended.jpg" width="100%" alt="Blended">
+                <br><strong>Blended</strong>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="text-align:center;padding:8px 16px 16px 16px;width:100%;vertical-align:middle">
+                <img src="images/xbox_ps5_blended_cropped.jpg" style="max-width:60%;height:auto;" alt="XStation 5 result">
+                <br><span class="caption"><em>The final XStation 5.</em></span>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:16px;width:100%;vertical-align:middle">
+                <p>
+                  <strong>Favorite: the LEGO Skyline.</strong> My favorite result replaces the front
+                  of a real Nissan Skyline with the front of a LEGO Skyline, using a hand-drawn,
+                  irregular mask around the hood, bumper, and windshield. With a hard paste, the
+                  LEGO section looks cut out: its lighting and color don't match the real car. The
+                  5-level blend softens that transition into the real car's paint.
+                </p>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:10px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="text-align:center;width:33%;vertical-align:top">
+                <img src="images/lego_car.jpg" width="100%" alt="LEGO car">
+                <br><strong>LEGO Skyline</strong>
+              </td>
+              <td style="text-align:center;width:33%;vertical-align:top">
+                <img src="images/car.jpg" width="100%" alt="Real car">
+                <br><strong>Real Skyline</strong>
+              </td>
+              <td style="text-align:center;width:33%;vertical-align:top">
+                <img src="images/lego_car_mask.jpg" width="100%" alt="Irregular mask">
+                <br><strong>Irregular mask</strong>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:10px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="text-align:center;width:50%;vertical-align:top">
+                <img src="images/lego_car_baseline_cropped.jpg" width="100%" alt="Hard seam">
+                <br><strong>Hard seam</strong>
+              </td>
+              <td style="text-align:center;width:50%;vertical-align:top">
+                <img src="images/lego_car_blended_cropped.jpg" width="100%" alt="Multiresolution blend">
+                <br><strong>Multiresolution blend</strong>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:16px;width:100%;vertical-align:middle">
+                <p>
+                  The figure below mirrors Figure 10 of the Burt and Adelson paper. Each row is one
+                  Laplacian level: the masked LEGO band, the masked real-car band, and their sum.
+                  The bottom row collapses each column into the masked input images and the final
+                  blend.
+                </p>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:10px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <th style="width:33%">LEGO (masked)</th><th style="width:33%">Real car (masked)</th><th style="width:33%">Blended</th>
+            </tr>
+            <tr>
+              <td><img src="images/lego_laplacian_stack_0.jpg" width="100%" alt="lego level 0"></td>
+              <td><img src="images/car_laplacian_stack_0.jpg" width="100%" alt="car level 0"></td>
+              <td><img src="images/lego_car_laplacian_stack_0.jpg" width="100%" alt="blend level 0"></td>
+            </tr>
+            <tr><td colspan="3" style="text-align:center" class="caption">Level 0</td></tr>
+            <tr>
+              <td><img src="images/lego_laplacian_stack_2.jpg" width="100%" alt="lego level 2"></td>
+              <td><img src="images/car_laplacian_stack_2.jpg" width="100%" alt="car level 2"></td>
+              <td><img src="images/lego_car_laplacian_stack_2.jpg" width="100%" alt="blend level 2"></td>
+            </tr>
+            <tr><td colspan="3" style="text-align:center" class="caption">Level 2</td></tr>
+            <tr>
+              <td><img src="images/lego_laplacian_stack_4.jpg" width="100%" alt="lego level 4"></td>
+              <td><img src="images/car_laplacian_stack_4.jpg" width="100%" alt="car level 4"></td>
+              <td><img src="images/lego_car_laplacian_stack_4.jpg" width="100%" alt="blend level 4"></td>
+            </tr>
+            <tr><td colspan="3" style="text-align:center" class="caption">Level 4</td></tr>
+            <tr>
+              <td><img src="images/lego_blended.jpg" width="100%" alt="lego collapsed"></td>
+              <td><img src="images/car_blended.jpg" width="100%" alt="car collapsed"></td>
+              <td><img src="images/lego_car_blended.jpg" width="100%" alt="final blend"></td>
+            </tr>
+            <tr><td colspan="3" style="text-align:center" class="caption">Collapsed: masked inputs and final blend</td></tr>
+          </tbody></table>
+
+          <!-- ===================== Footer ===================== -->
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:0px">
+                <br>
+                <p style="text-align:right;font-size:small;">
+                  Website template from <a href="https://jonbarron.info/">Jon Barron</a>.
+                </p>
+              </td>
+            </tr>
+          </tbody></table>
+        </td>
+      </tr>
+    </tbody></table>
+    <script>hljs.highlightAll();</script>
+  </body>
+</html>
