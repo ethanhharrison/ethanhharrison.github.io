@@ -910,18 +910,19 @@ def fourier(img):
           <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
             <tr>
               <td style="padding:0px 16px 16px 16px;width:100%;vertical-align:middle">
-                <pre class="code"><code class="language-python">def gaussian_stack(img, sigma, stack_height, ksize=9):
+                <pre class="code"><code class="language-python">def gaussian_stack(img, sigma, stack_height):
     w, h, c = img.shape
-    kernel = gaussian_kernel(ksize=ksize, sigma=sigma)
     stack = np.zeros((stack_height, w, h, c))
     stack[0] = img
     for i in range(1, stack_height):
         for j in range(c):
+            layer_sigma = 2 ** (i - 1) * sigma   # sigma doubles at each level
+            kernel = gaussian_kernel(ksize=layer_sigma * 3 + 1, sigma=layer_sigma)
             stack[i, ..., j] = signal.convolve2d(stack[i-1, ..., j], kernel, mode="same")
     return stack
 
-def laplacian_stack(img, sigma, stack_height, ksize=9):
-    gauss_stack = gaussian_stack(img, sigma, stack_height + 1, ksize=ksize)
+def laplacian_stack(img, sigma, stack_height):
+    gauss_stack = gaussian_stack(img, sigma, stack_height + 1)
     stack = gauss_stack[:-1] - gauss_stack[1:]
     return stack, gauss_stack[-1]   # band-pass levels + low-frequency residual</code></pre>
               </td>
@@ -933,9 +934,11 @@ def laplacian_stack(img, sigma, stack_height, ksize=9):
               <td style="padding:16px;width:100%;vertical-align:middle">
                 <p>
                   Below is my recreation of Figure 3.42 from Szeliski. I built 5-level Laplacian
-                  stacks (<code>&sigma;=3</code>, <code>ksize=19</code>) of the apple and orange and a
-                  Gaussian stack (<code>&sigma;=6</code>, <code>ksize=37</code>) of a vertical step
-                  mask. Each row shows level <em>i</em> of the apple weighted by mask level
+                  stacks of the apple and orange and a Gaussian stack of a vertical step mask, all
+                  starting at <code>&sigma;=3</code>. The blur doubles at each level
+                  (<code>&sigma;<sub>i</sub> = 2<sup>i&minus;1</sup> &middot; 3</code>, with
+                  <code>ksize = 3&sigma;<sub>i</sub> + 1</code>), so each level captures a band
+                  roughly an octave lower than the one before. Each row shows level <em>i</em> of the apple weighted by mask level
                   <em>i</em>, the orange weighted by <code>1 &minus;</code> mask level <em>i</em>,
                   and their sum. The bottom row shows the collapsed stacks. The mask becomes blurrier
                   at each level, so low frequencies are blended over a wide seam and high frequencies
@@ -979,8 +982,8 @@ def laplacian_stack(img, sigma, stack_height, ksize=9):
             <tr>
               <td style="padding:0px 16px 16px 16px;width:100%;vertical-align:middle">
                 <p class="caption"><em>
-                  Laplacian levels are visualized with a contrast gain of 3 and an offset of +70 so the
-                  zero-centered band-pass detail is visible. The mask stack is built at twice the image
+                  Laplacian levels are min-max normalized to [0, 255] so the zero-centered band-pass
+                  detail is visible. The mask stack is built at twice the image
                   size and center-cropped so zero padding at the borders doesn't bleed into the mask.
                 </em></p>
               </td>
@@ -1011,10 +1014,10 @@ def laplacian_stack(img, sigma, stack_height, ksize=9):
           <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
             <tr>
               <td style="padding:0px 16px 16px 16px;width:100%;vertical-align:middle">
-                <pre class="code"><code class="language-python">def blended_image(im1, im2, mask, sigma, stack_height, ksize=9):
-    lstack1, res1 = laplacian_stack(im1, sigma, stack_height, ksize=ksize)
-    lstack2, res2 = laplacian_stack(im2, sigma, stack_height, ksize=ksize)
-    mstack = gaussian_stack(mask, 6, stack_height + 1, ksize=37)
+                <pre class="code"><code class="language-python">def blended_image(im1, im2, mask, sigma, stack_height):
+    lstack1, res1 = laplacian_stack(im1, sigma, stack_height)
+    lstack2, res2 = laplacian_stack(im2, sigma, stack_height)
+    mstack = gaussian_stack(mask, sigma, stack_height + 1)
 
     # start with the blended low-frequency residuals
     m = mstack[-1]
@@ -1034,7 +1037,7 @@ def laplacian_stack(img, sigma, stack_height, ksize=9):
               <td style="padding:16px;width:100%;vertical-align:middle">
                 <p>
                   <strong>The Oraple.</strong> With a vertical step mask, simply pasting the halves
-                  together leaves a hard, obvious seam. The multiresolution blend (10 levels,
+                  together leaves a hard, obvious seam. The multiresolution blend (5 levels,
                   <code>&sigma;=3</code>) hides it: the colors fade smoothly while the textures
                   still change over a narrow band.
                 </p>
