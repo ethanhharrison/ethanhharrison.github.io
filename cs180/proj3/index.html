@@ -71,7 +71,7 @@
             <tr style="padding:0px">
               <td style="padding:2.5%;width:100%;vertical-align:middle">
                 <p class="name" style="text-align: center;">
-                  Project 3: The Power <br> of Flow Models
+                  Project 3: Fun With Flow Models
                 </p>
                 <p style="text-align:center">
                   <strong>E Harrison</strong> &nbsp;&mdash;&nbsp; CS180, Fall 2026
@@ -92,15 +92,12 @@
               <td style="padding:16px;width:100%;vertical-align:middle">
                 <h2>Overview</h2>
                 <p>
-                  This project is about flow matching. A flow model learns a velocity field that
-                  carries pure Gaussian noise (<code>t = 0</code>) to a clean image (<code>t = 1</code>)
-                  along the straight path <code>x<sub>t</sub> = (1&minus;t)&epsilon; + t&middot;x<sub>1</sub></code>.
+                  This project is about flow matching. 
                   In <strong>Part A</strong> I use a pretrained text-to-image flow model
                   (<a href="https://huggingface.co/MCG-NJU/PixNerd-XXL-P16-T2I">PixNerd</a>, 512&times;512)
                   to denoise images, sample from noise, apply classifier-free guidance, edit images,
                   and make visual anagrams and hybrid images. In <strong>Part B</strong> I build a UNet
-                  from scratch and train it on MNIST: first as a one-step denoiser, then as a
-                  time-conditioned and class-conditioned flow-matching model.
+                  from scratch and train it on MNIST to generate new images.
                 </p>
                 <p>
                   <strong>Contents:</strong>
@@ -122,7 +119,7 @@
                   Unless noted otherwise, everything in Part A uses random seed <strong>180</strong>,
                   Euler step size <code>h = 0.02</code>, and CFG weight <code>w = 7</code>. Images are
                   center-cropped and resized to 512&times;512. For Sections 1.1&ndash;1.5 I use a
-                  photo of a Kirby plush I took.
+                  photo of a Kirby! (best Smash character btw)
                 </p>
               </td>
             </tr>
@@ -138,8 +135,7 @@
                 <p>
                   The noisy input at time <code>t</code> is a linear interpolation between a noise
                   sample <code>&epsilon; ~ N(0, I)</code> and the clean image <code>x<sub>1</sub></code>.
-                  I sample one noise tensor and reuse it at <code>t = 0.25, 0.50, 0.75</code>. The
-                  endpoints check out exactly: <code>t = 0</code> returns the noise and
+                  I sample one noise tensor and reuse it at <code>t = 0.25, 0.50, 0.75</code>. <code>t = 0</code> returns just noise and
                   <code>t = 1</code> returns the image.
                 </p>
               </td>
@@ -175,8 +171,7 @@
                   <code>&sigma; &isin; {1, 2, 4, 8, 16}</code> and kept the one with the lowest MSE to
                   the clean image. The noisier the input, the more blur it needs (<code>&sigma; = 8</code>
                   at <code>t = 0.25</code>, <code>4</code> at <code>0.50</code>, <code>2</code> at
-                  <code>0.75</code>). Even the best blur leaves colored blotches and erases all the fine
-                  detail, because the noise and the image share the same frequencies.
+                  <code>0.75</code>).
                 </p>
               </td>
             </tr>
@@ -251,11 +246,7 @@
               <td style="padding:16px;width:100%;vertical-align:middle">
                 <p>
                   One step does far better than blurring. Even at <code>t = 0.25</code>, where the
-                  input is almost all noise, the model recovers a clean, plausible Kirby. But the
-                  estimate is smooth and &ldquo;averaged&rdquo;: the plush texture, the stitched
-                  mouth, and the toy in the acrylic case are lost or invented. One step estimates the
-                  <em>expected</em> clean image, which is blurry wherever the noise leaves the answer
-                  uncertain.
+                  input is almost all noise, the model recovers a plausible image of Kirby, albeit smoothed and &ldquo;averaged&rdquo;. 
                 </p>
               </td>
             </tr>
@@ -268,8 +259,7 @@
                 <h3>1.4 &nbsp;Visualizing Velocity</h3>
                 <p>
                   Here I compare the model's predicted velocity with the ground truth
-                  <code>v<sub>gt</sub> = x<sub>1</sub> &minus; &epsilon;</code>, which I can compute
-                  because I saved the noise. Both are shown on one shared symmetric RGB scale with zero
+                  <code>v<sub>gt</sub> = x<sub>1</sub> &minus; &epsilon;</code>. Both are shown on one shared symmetric RGB scale with zero
                   at mid-gray. The error map is the per-pixel RMS over RGB of
                   <code>(1&minus;t)(v&#770; &minus; v<sub>gt</sub>)</code>, shown on a fixed linear
                   scale <code>[0, 0.5]</code> at all three times.
@@ -305,21 +295,6 @@
             </tr>
           </tbody></table>
 
-          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
-            <tr>
-              <td style="padding:16px;width:100%;vertical-align:middle">
-                <p>
-                  The predicted and true velocities look nearly identical at all three times. Each one
-                  looks like a faded copy of the image plus the negated noise. The error is not spread
-                  evenly: it sits on <em>edges and fine texture</em> (the wood slats, the acrylic case,
-                  the outlines of the eyes and cheeks), and it is close to zero on flat regions like
-                  Kirby's face. The error map gets darker as <code>t</code> grows: with less noise,
-                  the model has less to guess, and the <code>(1&minus;t)</code> factor shrinks the
-                  remaining update.
-                </p>
-              </td>
-            </tr>
-          </tbody></table>
 
           <!-- ===================== A 1.5 ===================== -->
           <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
@@ -330,9 +305,7 @@
                   Instead of one big jump, I integrate the velocity field with Euler steps,
                   <code>x<sub>t+h</sub> = x<sub>t</sub> + h&middot;v(x<sub>t</sub>, t)</code>,
                   recomputing the velocity at every step. The last step is shortened so that time lands
-                  exactly on 1. Unit tests with a constant velocity confirm 50 steps from
-                  <code>t = 0</code>, 25 from <code>t = 0.5</code>, and a shortened final step from
-                  <code>t = 0.93</code>.
+                  exactly on 1.
                 </p>
               </td>
             </tr>
@@ -371,27 +344,6 @@ def euler_sample(x_start, t_start, step_size, velocity):
             </tr>
           </tbody></table>
 
-          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
-            <tr>
-              <td style="padding:16px;width:100%;vertical-align:middle">
-                <table class="offsets">
-                  <tr><th>Method (t = 0.50 input)</th><th>MSE to original</th></tr>
-                  <tr><td>Gaussian blur (&sigma; = 4)</td><td>0.0250</td></tr>
-                  <tr><td>One-step denoising</td><td>0.0066</td></tr>
-                  <tr><td>Euler sampling (25 steps)</td><td>0.0080</td></tr>
-                </table>
-                <p>
-                  Iterative sampling gives by far the most realistic result: it brings back the plush
-                  fabric texture, the stitched mouth, and sharp details in the background. Oddly, its MSE
-                  is slightly <em>higher</em> than the one-step estimate. That is expected. The one-step
-                  output is close to the conditional mean, which is exactly what minimizes squared
-                  error, so it plays it safe with smooth surfaces. The Euler sampler commits to one
-                  specific sharp image, so any texture it invents that doesn't match the original
-                  pixel-for-pixel costs MSE, even though it looks much better.
-                </p>
-              </td>
-            </tr>
-          </tbody></table>
 
           <!-- ===================== A 1.6 ===================== -->
           <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
@@ -420,10 +372,9 @@ def euler_sample(x_start, t_start, step_size, velocity):
             <tr>
               <td style="padding:16px;width:100%;vertical-align:middle">
                 <p>
-                  <strong>Subject bias.</strong> The prompt doesn't name a subject, yet all five samples
-                  are <em>portraits of people</em>: head-and-shoulders shots against plain studio
-                  backgrounds. The model seems to have learned that &ldquo;high quality photo&rdquo;
-                  in its training captions mostly goes with portrait photography. Without guidance, the
+                  The prompt doesn't name a subject, yet all five samples
+                  are portraits of people. The model seems to have learned that &ldquo;high quality photo&rdquo;
+                  mostly goes with portraits. Without guidance, the
                   results are also often wrong: seed 180 has no face, and seeds 181 and 183 have
                   distorted, muddy anatomy.
                 </p>
@@ -442,9 +393,7 @@ def euler_sample(x_start, t_start, step_size, velocity):
                   CFG runs the model twice per step, once with the prompt (<code>v<sub>c</sub></code>)
                   and once with the empty prompt (<code>v<sub>u</sub></code>), and extrapolates away
                   from the unconditional direction:
-                  <code>v<sub>cfg</sub> = v<sub>c</sub> + w(v<sub>c</sub> &minus; v<sub>u</sub>)</code>.
-                  With <code>w = 0</code> this reduces exactly to the conditional prediction, which I
-                  verified. I regenerate the same five seeds with <code>w = 7</code>.
+                  <code>v<sub>cfg</sub> = v<sub>c</sub> + w(v<sub>c</sub> &minus; v<sub>u</sub>)</code>. I regenerated the same five seeds with <code>w = 7</code>.
                 </p>
               </td>
             </tr>
@@ -474,12 +423,10 @@ def euler_sample(x_start, t_start, step_size, velocity):
             <tr>
               <td style="padding:16px;width:100%;vertical-align:middle">
                 <p>
-                  With guidance the samples are much cleaner. Every face is coherent and sharp, with
+                  With guidance, the samples are much cleaner. Every face is coherent, with
                   correct anatomy, good lighting, and high contrast. Seed 182 even keeps the same
-                  hand-on-cheek pose as its unguided version. The cost is diversity. All five are now
-                  centered, front-facing headshots with very similar framing, lighting, and expression.
-                  CFG pushes samples toward the most &ldquo;prompt-like&rdquo; part of the
-                  distribution, trading variety for quality.
+                  hand-on-cheek pose as its unguided version. However, all five images are now
+                  the same centered, front-facing headshots.
                 </p>
               </td>
             </tr>
@@ -497,9 +444,7 @@ def euler_sample(x_start, t_start, step_size, velocity):
                   <code>t<sub>start</sub></code> with
                   <code>(1&minus;t<sub>start</sub>)&epsilon; + t<sub>start</sub>x<sub>1</sub></code>,
                   then run the CFG Euler sampler from <code>t<sub>start</sub></code> to 1 with the
-                  prompt <em>&ldquo;a high quality photo&rdquo;</em>. A small
-                  <code>t<sub>start</sub></code> means a lot of noise and a lot of freedom to change
-                  the image. A large one keeps the original mostly intact. I use starting times
+                  prompt <em>&ldquo;a high quality photo&rdquo;</em>. I used starting times
                   <code>0.02, 0.04, 0.06, 0.10, 0.14, 0.25, 0.50</code>.
                 </p>
               </td>
@@ -511,8 +456,12 @@ def euler_sample(x_start, t_start, step_size, velocity):
               <td style="padding:0px 16px 16px 16px;width:100%;vertical-align:middle">
                 <pre class="code"><code class="language-python">def edit(image, noise, t_start, condition, predict_velocity, w=7, step_size=0.02):
     noisy_image = interpolate(image, noise, t_start)
-    edited_image, _ = euler_sample(noisy_image, t_start, step_size,
-                                   lambda x, t: cfg_velocity(x, t, condition, w, predict_velocity))
+    edited_image, _ = euler_sample(
+        noisy_image, 
+        t_start, 
+        step_size,
+        lambda x, t: cfg_velocity(x, t, condition, w, predict_velocity)
+    )
     return edited_image</code></pre>
               </td>
             </tr>
@@ -528,27 +477,13 @@ def euler_sample(x_start, t_start, step_size, velocity):
             <tr>
               <td style="text-align:center;width:100%;vertical-align:top">
                 <img src="images/edit_frankie.jpg" width="100%" alt="Frankie edits">
-                <br><strong>Frankie (my dog)</strong>
+                <br><strong>Frankie (my dog/menace to society)</strong>
               </td>
             </tr>
             <tr>
               <td style="text-align:center;width:100%;vertical-align:top">
                 <img src="images/edit_kirby.jpg" width="100%" alt="Kirby edits">
-                <br><strong>Kirby plush</strong>
-              </td>
-            </tr>
-          </tbody></table>
-
-          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
-            <tr>
-              <td style="padding:16px;width:100%;vertical-align:middle">
-                <p>
-                  At the earliest starting times, only the coarse layout survives (a tall pale shape on
-                  blue sky, or blue fabric on the left), and the model fills in its own content. The
-                  portrait bias from 1.6 shows up strongly: Frankie becomes a man in a blue shirt for
-                  <code>t &le; 0.14</code>. By <code>t = 0.25</code> the subjects are recognizable,
-                  and by <code>0.50</code> the edits are mostly clean-ups of the original.
-                </p>
+                <br><strong>Kirby</strong>
               </td>
             </tr>
           </tbody></table>
@@ -589,20 +524,6 @@ def euler_sample(x_start, t_start, step_size, velocity):
             </tr>
           </tbody></table>
 
-          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
-            <tr>
-              <td style="padding:16px;width:100%;vertical-align:middle">
-                <p>
-                  The most interesting edits are in the middle range (<code>t &asymp; 0.06&ndash;0.14</code>).
-                  The bottle turns into a real-looking plastic bottle with a ribbed cap, the cube's flat
-                  faces pick up shading and depth, and Tom's body becomes a 3D gray object. The flat
-                  white backgrounds of the drawings push the earliest edits toward product shots and
-                  studio portraits.
-                </p>
-              </td>
-            </tr>
-          </tbody></table>
-
           <!-- ===================== A 3.2 ===================== -->
           <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
             <tr>
@@ -639,21 +560,6 @@ def euler_sample(x_start, t_start, step_size, velocity):
               <td style="text-align:center;width:100%;vertical-align:top">
                 <img src="images/text_edit_kirby.jpg" width="100%" alt="Kirby text edit">
                 <br><strong>Kirby &rarr; &ldquo;a giant pink planet&rdquo;</strong>
-              </td>
-            </tr>
-          </tbody></table>
-
-          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
-            <tr>
-              <td style="padding:16px;width:100%;vertical-align:middle">
-                <p>
-                  The best edits mix both sources. At <code>t = 0.06</code> the Campanile becomes a
-                  giant pencil standing against the same blue sky and trees. Kirby becomes a pink
-                  planet that keeps his eyes at <code>t = 0.06&ndash;0.10</code>. Frankie moves
-                  smoothly from a generic cartoon dog, to a cartoon version of Frankie on the blue
-                  blanket (<code>0.10&ndash;0.25</code>), to a lightly stylized photo
-                  (<code>0.50</code>).
-                </p>
               </td>
             </tr>
           </tbody></table>
@@ -699,19 +605,6 @@ def euler_sample(x_start, t_start, step_size, velocity):
               <td style="text-align:center;width:100%;vertical-align:top">
                 <img src="images/anagram_views_1.jpg" width="100%" alt="Anagram 2">
                 <br><strong>Upright: &ldquo;a lithograph of a snowy mountain village&rdquo; &nbsp;|&nbsp; Rotated: &ldquo;a lithograph of a horse&rdquo;</strong>
-              </td>
-            </tr>
-          </tbody></table>
-
-          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
-            <tr>
-              <td style="padding:16px;width:100%;vertical-align:middle">
-                <p>
-                  In the first illusion, the glowing campfire becomes the old man's lit forehead
-                  and the people around it form his face. In the second, the mountain peaks and rooftops
-                  turn into the horse's legs and body when flipped. Styles like oil painting and
-                  lithograph help a lot, since loose brushwork and line texture can be read either way.
-                </p>
               </td>
             </tr>
           </tbody></table>
@@ -776,22 +669,6 @@ def euler_sample(x_start, t_start, step_size, velocity):
             </tr>
           </tbody></table>
 
-          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
-            <tr>
-              <td style="padding:16px;width:100%;vertical-align:middle">
-                <p>
-                  Up close the high-frequency prompt wins: a waterfall with sharp rock and water
-                  detail, and an etched house. From far away, the low-frequency prompt can only shape
-                  the overall silhouette and tonal layout: the waterfall becomes one large dark mass
-                  with a downward-hanging extension. These hybrids are much subtler than the Project 2
-                  ones, and the cat in particular is hard to see. With <code>&sigma; = 16</code> at
-                  512&times;512, the low-pass band holds very little structure, so the close-up prompt
-                  tends to dominate.
-                </p>
-              </td>
-            </tr>
-          </tbody></table>
-
           <!-- =========================================================== -->
           <!-- ======================== PART B =========================== -->
           <!-- =========================================================== -->
@@ -816,14 +693,6 @@ def euler_sample(x_start, t_start, step_size, velocity):
                 <h2>1: Training a Single-Step Denoising UNet</h2>
                 <br>
                 <h3>1.1 &nbsp;Implementing the UNet</h3>
-                <p>
-                  The UNet is built from small blocks. <code>Conv</code> is a 3&times;3 convolution
-                  followed by BatchNorm and GELU. <code>DownConv</code> and <code>UpConv</code> are its
-                  stride-2 down and up versions. <code>Flatten</code> is a 7&times;7 average pool down
-                  to 1&times;1, and <code>Unflatten</code> is a 7&times;7 transposed convolution back
-                  up. The encoder goes 28&rarr;14&rarr;7&rarr;1, the decoder mirrors it, and skip
-                  connections concatenate encoder features onto the decoder at every resolution.
-                </p>
               </td>
             </tr>
           </tbody></table>
@@ -846,10 +715,10 @@ def euler_sample(x_start, t_start, step_size, velocity):
         self.conv = nn.Conv2d(D, 1, kernel_size=3, stride=1, padding=1)
 
     def forward(self, x):
-        x_1 = self.conv_block1(x)                          # D  x 28 x 28
-        x_2 = self.down_block1(x_1)                        # D  x 14 x 14
-        x_3 = self.down_block2(x_2)                        # 2D x 7 x 7
-        x_5 = self.unflatten(self.flatten(x_3))            # 2D x 7 x 7 (via 1 x 1)
+        x_1 = self.conv_block1(x)                          
+        x_2 = self.down_block1(x_1)                        
+        x_3 = self.down_block2(x_2)                        
+        x_5 = self.unflatten(self.flatten(x_3))            
         x_6 = self.up_block1(torch.cat((x_3, x_5), dim=1))
         x_7 = self.up_block2(torch.cat((x_2, x_6), dim=1))
         x_8 = self.conv_block2(torch.cat((x_1, x_7), dim=1))
@@ -890,8 +759,7 @@ def euler_sample(x_start, t_start, step_size, velocity):
                 <p>
                   I trained the denoiser at <code>&sigma; = 0.5</code> with hidden dimension
                   <code>D = 128</code>, batch size 256, Adam with learning rate <code>1e-4</code>, for
-                  5 epochs. A fresh noise sample is drawn for every batch, so the model never sees the
-                  same noisy image twice.
+                  5 epochs.
                 </p>
               </td>
             </tr>
@@ -924,7 +792,6 @@ def euler_sample(x_start, t_start, step_size, velocity):
                 <p>
                   After just one epoch the outputs are already clean, recognizable digits. After five
                   epochs the strokes are sharper and the faint gray speckle in the background is gone.
-                  The loss falls from about 0.015 to 0.0077.
                 </p>
               </td>
             </tr>
@@ -952,27 +819,13 @@ def euler_sample(x_start, t_start, step_size, velocity):
             </tr>
           </tbody></table>
 
-          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
-            <tr>
-              <td style="padding:16px;width:100%;vertical-align:middle">
-                <p>
-                  The denoiser handles lower noise levels with no trouble and still does well at
-                  <code>&sigma; = 0.6</code>. At <code>0.8</code> artifacts start to show, and at
-                  <code>1.0</code> it fails: the output is a scribble that no longer looks like a 7.
-                  It learned to remove a specific amount of noise and does not extrapolate to much
-                  heavier noise.
-                </p>
-              </td>
-            </tr>
-          </tbody></table>
-
           <!-- ===================== B 1.2.3 ===================== -->
           <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
             <tr>
               <td style="padding:16px;width:100%;vertical-align:middle">
                 <h3>1.2.3 &nbsp;Denoising Pure Noise</h3>
                 <p>
-                  Can the same setup generate digits? I trained a fresh UNet (same hyperparameters)
+                  I trained a fresh UNet (same hyperparameters)
                   whose input is pure Gaussian noise <code>z ~ N(0, I)</code>, independent of the
                   target digit, and asked it to output a clean digit.
                 </p>
@@ -1005,19 +858,12 @@ def euler_sample(x_start, t_start, step_size, velocity):
             <tr>
               <td style="padding:16px;width:100%;vertical-align:middle">
                 <p>
-                  <strong>What happens.</strong> Every input gives the same output: a blurry gray blob
-                  that looks like all ten digits stacked on top of each other. It is roughly an
-                  0/8/3 shape, brightest where most digits have ink. The loss plateaus after about
-                  100 steps at about 0.07 and stays there.
-                </p>
-                <p>
-                  <strong>Why.</strong> With an MSE loss, the best prediction is the <em>conditional
+                  Every input gives the same blurry gray blob that looks like all ten digits stacked on top of each other. It is roughly an
+                  0/8/3 shape. This happens becuase with an MSE loss, the best prediction is the <em>conditional
                   mean</em> <code>E[x | z]</code>. Here the input <code>z</code> is independent of the
-                  target <code>x</code>, so <code>E[x | z] = E[x]</code>: the average of the training
+                  target <code>x</code>, so <code>E[x | z] = E[x]</code>, a.k.a the average of the training
                   set. The network can't do better than outputting the mean MNIST digit, whatever
-                  noise it gets. The plateau in the loss is the variance of the data around that mean.
-                  This is why one-step denoising cannot generate samples, and why we need an
-                  iterative, time-conditioned model.
+                  noise it gets.
                 </p>
               </td>
             </tr>
@@ -1035,8 +881,7 @@ def euler_sample(x_start, t_start, step_size, velocity):
                   (with <code>x<sub>0</sub></code> noise) and predicts the velocity
                   <code>x<sub>1</sub> &minus; x<sub>0</sub></code>. To condition on <code>t</code>, two
                   <code>FCBlock</code>s (Linear &rarr; GELU &rarr; Linear) embed the scalar
-                  <code>t</code>. The embeddings multiply the bottleneck output (<code>unflatten</code>)
-                  and the first up-block output channel-wise.
+                  <code>t</code>.
                 </p>
               </td>
             </tr>
@@ -1076,7 +921,7 @@ def time_fm_sample(unet, img_wh, num_ts, seed=0):
                 <p>
                   Hidden dimension <code>D = 64</code>, batch size 64, Adam with initial learning rate
                   <code>1e-2</code>, and an <code>ExponentialLR</code> scheduler with
-                  <code>&gamma; = 0.1<sup>1/10</sup></code> stepped once per epoch, for 10 epochs.
+                  <code>&gamma; = 0.1<sup>1/10</sup></code> stepped once per epoch, for 10 epochs:
                 </p>
               </td>
             </tr>
@@ -1125,18 +970,6 @@ def time_fm_sample(unet, img_wh, num_ts, seed=0):
             </tr>
           </tbody></table>
 
-          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
-            <tr>
-              <td style="padding:16px;width:100%;vertical-align:middle">
-                <p>
-                  After 1 epoch the samples are digit-like strokes but mostly illegible. After 5,
-                  most are readable. After 10, the majority are clear digits (1, 4, 5, 7, 9 especially),
-                  though some are still malformed. Because the model is unconditional, it can't be
-                  told which digit to draw, and some samples land between classes.
-                </p>
-              </td>
-            </tr>
-          </tbody></table>
 
           <!-- ===================== B 2.4 ===================== -->
           <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
@@ -1242,18 +1075,6 @@ def class_fm_sample(unet, c, img_wh, num_ts, guidance_scale=5.0, seed=0):
             </tr>
           </tbody></table>
 
-          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
-            <tr>
-              <td style="padding:16px;width:100%;vertical-align:middle">
-                <p>
-                  Class conditioning plus CFG makes a big difference compared with 2.3. After one epoch
-                  the 0s and 1s are already right, though the other classes are still blobs. After five
-                  epochs every class is correct. After ten, the digits are crisp and varied in style,
-                  with only an occasional stray stroke (one of the 4s, for example).
-                </p>
-              </td>
-            </tr>
-          </tbody></table>
 
           <!-- ===================== B 2.6 no scheduler ===================== -->
           <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
@@ -1263,12 +1084,7 @@ def class_fm_sample(unet, c, img_wh, num_ts, guidance_scale=5.0, seed=0):
                 <p>
                   To drop the exponential scheduler without losing quality, I trained a separate model
                   with a <strong>constant learning rate of <code>1e-3</code></strong> and all other
-                  settings unchanged. The scheduled run starts at <code>1e-2</code> and decays by 10&times;
-                  over training, ending at <code>1e-3</code>. A constant <code>1e-2</code> would keep
-                  the steps too large for the model to settle into a good minimum. A constant
-                  <code>1e-3</code> is the scheduler's final, &ldquo;fine-tuning&rdquo; rate. Adam's
-                  per-parameter step scaling still makes fast progress early on at that rate, so
-                  skipping the high-rate warm phase costs very little.
+                  settings unchanged.
                 </p>
               </td>
             </tr>
@@ -1297,21 +1113,6 @@ def class_fm_sample(unet, c, img_wh, num_ts, guidance_scale=5.0, seed=0):
               <td style="text-align:center;width:100%;vertical-align:top">
                 <img src="images/generated_images_class_cond_fm_no_scheduler_after_epoch_10.png" width="100%" alt="No scheduler epoch 10">
                 <br><strong>No scheduler, after epoch 10</strong>
-              </td>
-            </tr>
-          </tbody></table>
-
-          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
-            <tr>
-              <td style="padding:16px;width:100%;vertical-align:middle">
-                <p>
-                  The constant-rate model holds up well. After one epoch it is actually <em>ahead</em>
-                  of the scheduled model: most classes (0, 1, 2, 3, 4, 6) are already recognizable,
-                  while the scheduled model, still at its high initial rate, mostly produces blobs.
-                  By epochs 5 and 10 the two are visually comparable, with clean, correctly classed digits.
-                  The final loss is about the same, around 0.1, though the per-step loss of the
-                  constant-rate run stays a little noisier because its step size never shrinks.
-                </p>
               </td>
             </tr>
           </tbody></table>
