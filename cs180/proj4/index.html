@@ -1,0 +1,621 @@
+<!DOCTYPE HTML>
+<html lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+    <title>CS180 Project 4 &mdash; Ethan Harrison</title>
+
+    <meta name="author" content="Ethan Harrison">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="shortcut icon" href="../../images/favicon/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" type="text/css" href="../../stylesheet.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
+    <style>
+      pre.code {
+        background-color: #f6f8fa;
+        border: 1px solid #e1e4e8;
+        border-radius: 8px;
+        padding: 14px 16px;
+        overflow-x: auto;
+        font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+        font-size: 12.5px;
+        line-height: 1.45;
+        color: #24292e;
+      }
+      pre.code code.hljs {
+        background: transparent;
+        padding: 0;
+        font-family: inherit;
+        font-size: inherit;
+      }
+      h3 {
+        margin: 0 0 4px 0;
+        font-weight: normal;
+        font-family: 'Lato', Verdana, Helvetica, sans-serif;
+        font-size: 17px;
+      }
+      .eqn {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-items: center;
+        gap: 18px;
+        margin: 10px 0;
+        overflow-x: auto;
+      }
+      .eqn > div {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .lbl {
+        font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+        font-size: 14px;
+      }
+      table.matrix {
+        border-collapse: collapse;
+        border-left: 2px solid #444;
+        border-right: 2px solid #444;
+        font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+        font-size: 12px;
+      }
+      table.matrix td {
+        padding: 1px 8px;
+        text-align: right;
+      }
+      details summary {
+        cursor: pointer;
+        text-align: center;
+        font-size: 14px;
+      }
+    </style>
+
+  </head>
+
+  <body>
+    <table style="width:100%;max-width:800px;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+      <tr style="padding:0px">
+        <td style="padding:0px">
+
+          <!-- ===================== Header ===================== -->
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr style="padding:0px">
+              <td style="padding:2.5%;width:100%;vertical-align:middle">
+                <p class="name" style="text-align: center;">
+                  Project 4: Image Warping <br> and Mosaicing
+                </p>
+                <p style="text-align:center">
+                  <strong>E Harrison</strong> &nbsp;&mdash;&nbsp; CS180, Fall 2026
+                </p>
+                <p style="text-align:center">
+                  <a href="../index.html">CS180 Projects</a> &nbsp;/&nbsp;
+                  <a href="../../index.html">Home</a> &nbsp;/&nbsp;
+                  <a href="https://cal-cs180.github.io/fa26/hw/proj3/partA.html">Part A Assignment</a>
+                </p>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <!-- ===================== Overview ===================== -->
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:16px;width:100%;vertical-align:middle">
+                <h2>Overview</h2>
+                <p>
+                  In this project I stitch photos together into panoramas. I pick matching points
+                  between overlapping photos, solve for the homography between them, warp the images
+                  into a shared frame, and blend them into a mosaic.
+                </p>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <!-- ===================== A.1 ===================== -->
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:16px;width:100%;vertical-align:middle">
+                <h2>Part A: Image Warping and Mosaicing</h2>
+                <br>
+                <h3>A.1 &nbsp;Shoot the Pictures</h3>
+                <p>
+                  I shot three sets of photos around campus, rotating the camera about a fixed center
+                  of projection between shots. The Gateway and Sather Gate sets pan left to right, and
+                  the Tree set pans from the ground up to the sky.
+                </p>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:10px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr><th colspan="3">Gateway</th></tr>
+            <tr>
+              <td style="text-align:center;width:33%;vertical-align:top"><img src="images/gateway_1.jpg" width="100%" alt="Gateway 1"><br>Image 1</td>
+              <td style="text-align:center;width:33%;vertical-align:top"><img src="images/gateway_2.jpg" width="100%" alt="Gateway 2"><br>Image 2</td>
+              <td style="text-align:center;width:33%;vertical-align:top"><img src="images/gateway_3.jpg" width="100%" alt="Gateway 3"><br>Image 3</td>
+            </tr>
+            <tr><th colspan="3"><br>Sather Gate</th></tr>
+            <tr>
+              <td style="text-align:center;width:33%;vertical-align:top"><img src="images/sather_1.jpg" width="100%" alt="Sather 1"><br>Image 1</td>
+              <td style="text-align:center;width:33%;vertical-align:top"><img src="images/sather_2.jpg" width="100%" alt="Sather 2"><br>Image 2</td>
+              <td style="text-align:center;width:33%;vertical-align:top"><img src="images/sather_3.jpg" width="100%" alt="Sather 3"><br>Image 3</td>
+            </tr>
+            <tr><th colspan="3"><br>Tree</th></tr>
+            <tr>
+              <td style="text-align:center;width:33%;vertical-align:top"><img src="images/tree_1.jpg" width="100%" alt="Tree 1"><br>Image 1</td>
+              <td style="text-align:center;width:33%;vertical-align:top"><img src="images/tree_2.jpg" width="100%" alt="Tree 2"><br>Image 2</td>
+              <td style="text-align:center;width:33%;vertical-align:top"><img src="images/tree_3.jpg" width="100%" alt="Tree 3"><br>Image 3</td>
+            </tr>
+          </tbody></table>
+
+          <!-- ===================== A.2 ===================== -->
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:16px;width:100%;vertical-align:middle">
+                <h3>A.2 &nbsp;Recover Homographies</h3>
+                <p>
+                  A homography maps a point <code>(x, y)</code> in one image to <code>(x', y')</code>
+                  in another. Fixing <code>h<sub>33</sub> = 1</code> leaves 8 unknowns, and each
+                  correspondence gives two linear equations:
+                </p>
+                <div class="eqn">
+                  <table class="matrix">
+                    <tr><td>x</td><td>y</td><td>1</td><td>0</td><td>0</td><td>0</td><td>&minus;x&middot;x'</td><td>&minus;y&middot;x'</td></tr>
+                    <tr><td>0</td><td>0</td><td>0</td><td>x</td><td>y</td><td>1</td><td>&minus;x&middot;y'</td><td>&minus;y&middot;y'</td></tr>
+                  </table>
+                  <table class="matrix">
+                    <tr><td>h<sub>11</sub></td></tr><tr><td>h<sub>12</sub></td></tr><tr><td>h<sub>13</sub></td></tr>
+                    <tr><td>h<sub>21</sub></td></tr><tr><td>h<sub>22</sub></td></tr><tr><td>h<sub>23</sub></td></tr>
+                    <tr><td>h<sub>31</sub></td></tr><tr><td>h<sub>32</sub></td></tr>
+                  </table>
+                  <span class="lbl">=</span>
+                  <table class="matrix">
+                    <tr><td>x'</td></tr><tr><td>y'</td></tr>
+                  </table>
+                </div>
+                <p>
+                  I picked 5&ndash;6 correspondences per pair, stacked their equations into
+                  <code>Ah = b</code>, and solved the overdetermined system with least squares.
+                  Each mosaic uses image 2 as the reference, so I recover two homographies per set:
+                  image 1 &rarr; image 2 and image 3 &rarr; image 2.
+                </p>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:0px 16px 16px 16px;width:100%;vertical-align:middle">
+                <pre class="code"><code class="language-python">def compute_H(im1_pts, im2_pts):
+    A, b = [], []
+    for (x, y), (xp, yp) in zip(im1_pts, im2_pts):
+        A.append([x, y, 1, 0, 0, 0, -x * xp, -y * xp])
+        A.append([0, 0, 0, x, y, 1, -x * yp, -y * yp])
+        b.append(xp)
+        b.append(yp)
+    A, b = np.array(A), np.array(b)
+    H = np.linalg.lstsq(A, b)
+    return H[0]
+
+def get_homography_matrix(im1_pts, im2_pts):
+    H_vector = compute_H(im1_pts.astype(np.float64), im2_pts.astype(np.float64))
+    return np.append(H_vector, 1.0).reshape(3, 3)</code></pre>
+                <p class="caption" style="font-size:13px;color:#444;">
+                  Below are the correspondences for each pair (matching numbers are the same point),
+                  the full system of equations (click to expand), and the recovered homography.
+                </p>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <!-- gateway 1to2 -->
+          <table style="width:100%;border:0px;border-spacing:10px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr><th colspan="2">Gateway: image 1 &rarr; image 2 (6 correspondences)</th></tr>
+            <tr>
+              <td style="text-align:center;width:50%;vertical-align:top">
+                <img src="images/gateway_1_2_points.jpg" width="100%" alt="Gateway image 1 points">
+                <br><strong>Image 1</strong>
+              </td>
+              <td style="text-align:center;width:50%;vertical-align:top">
+                <img src="images/gateway_2_1_points.jpg" width="100%" alt="Gateway image 2 points">
+                <br><strong>Image 2</strong>
+              </td>
+            </tr>
+            <tr>
+              <td colspan="2" style="vertical-align:top">
+                <details>
+                  <summary>System of equations <code>Ah = b</code></summary>
+                  <div class="eqn">
+                    <div><span class="lbl">A</span><table class="matrix"><tr><td>1&#8239;120</td><td>2&#8239;968</td><td>1</td><td>0</td><td>0</td><td>0</td><td>-107&#8239;520</td><td>-284&#8239;928</td></tr><tr><td>0</td><td>0</td><td>0</td><td>1&#8239;120</td><td>2&#8239;968</td><td>1</td><td>-3&#8239;561&#8239;600</td><td>-9&#8239;438&#8239;240</td></tr><tr><td>1&#8239;936</td><td>2&#8239;681</td><td>1</td><td>0</td><td>0</td><td>0</td><td>-2&#8239;230&#8239;272</td><td>-3&#8239;088&#8239;512</td></tr><tr><td>0</td><td>0</td><td>0</td><td>1&#8239;936</td><td>2&#8239;681</td><td>1</td><td>-5&#8239;076&#8239;192</td><td>-7&#8239;029&#8239;582</td></tr><tr><td>2&#8239;244</td><td>2&#8239;446</td><td>1</td><td>0</td><td>0</td><td>0</td><td>-3&#8239;197&#8239;700</td><td>-3&#8239;485&#8239;550</td></tr><tr><td>0</td><td>0</td><td>0</td><td>2&#8239;244</td><td>2&#8239;446</td><td>1</td><td>-5&#8239;304&#8239;816</td><td>-5&#8239;782&#8239;344</td></tr><tr><td>2&#8239;973</td><td>2&#8239;501</td><td>1</td><td>0</td><td>0</td><td>0</td><td>-5&#8239;714&#8239;106</td><td>-4&#8239;806&#8239;922</td></tr><tr><td>0</td><td>0</td><td>0</td><td>2&#8239;973</td><td>2&#8239;501</td><td>1</td><td>-6&#8239;968&#8239;712</td><td>-5&#8239;862&#8239;344</td></tr><tr><td>2&#8239;245</td><td>1&#8239;279</td><td>1</td><td>0</td><td>0</td><td>0</td><td>-3&#8239;196&#8239;880</td><td>-1&#8239;821&#8239;296</td></tr><tr><td>0</td><td>0</td><td>0</td><td>2&#8239;245</td><td>1&#8239;279</td><td>1</td><td>-2&#8239;898&#8239;295</td><td>-1&#8239;651&#8239;189</td></tr><tr><td>2&#8239;398</td><td>1&#8239;849</td><td>1</td><td>0</td><td>0</td><td>0</td><td>-3&#8239;719&#8239;298</td><td>-2&#8239;867&#8239;799</td></tr><tr><td>0</td><td>0</td><td>0</td><td>2&#8239;398</td><td>1&#8239;849</td><td>1</td><td>-4&#8239;366&#8239;758</td><td>-3&#8239;367&#8239;029</td></tr></table></div>
+                    <div><span class="lbl">b</span><table class="matrix"><tr><td>96</td></tr><tr><td>3&#8239;180</td></tr><tr><td>1&#8239;152</td></tr><tr><td>2&#8239;622</td></tr><tr><td>1&#8239;425</td></tr><tr><td>2&#8239;364</td></tr><tr><td>1&#8239;922</td></tr><tr><td>2&#8239;344</td></tr><tr><td>1&#8239;424</td></tr><tr><td>1&#8239;291</td></tr><tr><td>1&#8239;551</td></tr><tr><td>1&#8239;821</td></tr></table></div>
+                  </div>
+                </details>
+                <div class="eqn"><div><span class="lbl">H =</span><table class="matrix"><tr><td>3.3441</td><td>0.0326</td><td>-3653.94</td></tr><tr><td>1.5414</td><td>2.5539</td><td>-3202.77</td></tr><tr><td>7.579e-4</td><td>2.314e-5</td><td>1.0000</td></tr></table></div></div>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <!-- gateway 3to2 -->
+          <table style="width:100%;border:0px;border-spacing:10px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr><th colspan="2">Gateway: image 3 &rarr; image 2 (5 correspondences)</th></tr>
+            <tr>
+              <td style="text-align:center;width:50%;vertical-align:top">
+                <img src="images/gateway_3_2_points.jpg" width="100%" alt="Gateway image 3 points">
+                <br><strong>Image 3</strong>
+              </td>
+              <td style="text-align:center;width:50%;vertical-align:top">
+                <img src="images/gateway_2_3_points.jpg" width="100%" alt="Gateway image 2 points">
+                <br><strong>Image 2</strong>
+              </td>
+            </tr>
+            <tr>
+              <td colspan="2" style="vertical-align:top">
+                <details>
+                  <summary>System of equations <code>Ah = b</code></summary>
+                  <div class="eqn">
+                    <div><span class="lbl">A</span><table class="matrix"><tr><td>375</td><td>2&#8239;400</td><td>1</td><td>0</td><td>0</td><td>0</td><td>-534&#8239;375</td><td>-3&#8239;420&#8239;000</td></tr><tr><td>0</td><td>0</td><td>0</td><td>375</td><td>2&#8239;400</td><td>1</td><td>-886&#8239;500</td><td>-5&#8239;673&#8239;600</td></tr><tr><td>998</td><td>2&#8239;322</td><td>1</td><td>0</td><td>0</td><td>0</td><td>-1&#8239;918&#8239;156</td><td>-4&#8239;462&#8239;884</td></tr><tr><td>0</td><td>0</td><td>0</td><td>998</td><td>2&#8239;322</td><td>1</td><td>-2&#8239;339&#8239;312</td><td>-5&#8239;442&#8239;768</td></tr><tr><td>1&#8239;112</td><td>3&#8239;311</td><td>1</td><td>0</td><td>0</td><td>0</td><td>-2&#8239;288&#8239;496</td><td>-6&#8239;814&#8239;038</td></tr><tr><td>0</td><td>0</td><td>0</td><td>1&#8239;112</td><td>3&#8239;311</td><td>1</td><td>-3&#8239;754&#8239;112</td><td>-11&#8239;177&#8239;936</td></tr><tr><td>1&#8239;511</td><td>2&#8239;731</td><td>1</td><td>0</td><td>0</td><td>0</td><td>-3&#8239;806&#8239;209</td><td>-6&#8239;879&#8239;389</td></tr><tr><td>0</td><td>0</td><td>0</td><td>1&#8239;511</td><td>2&#8239;731</td><td>1</td><td>-4&#8239;347&#8239;147</td><td>-7&#8239;857&#8239;087</td></tr><tr><td>1&#8239;385</td><td>1&#8239;786</td><td>1</td><td>0</td><td>0</td><td>0</td><td>-3&#8239;229&#8239;820</td><td>-4&#8239;164&#8239;952</td></tr><tr><td>0</td><td>0</td><td>0</td><td>1&#8239;385</td><td>1&#8239;786</td><td>1</td><td>-2&#8239;447&#8239;295</td><td>-3&#8239;155&#8239;862</td></tr></table></div>
+                    <div><span class="lbl">b</span><table class="matrix"><tr><td>1&#8239;425</td></tr><tr><td>2&#8239;364</td></tr><tr><td>1&#8239;922</td></tr><tr><td>2&#8239;344</td></tr><tr><td>2&#8239;058</td></tr><tr><td>3&#8239;376</td></tr><tr><td>2&#8239;519</td></tr><tr><td>2&#8239;877</td></tr><tr><td>2&#8239;332</td></tr><tr><td>1&#8239;767</td></tr></table></div>
+                  </div>
+                </details>
+                <div class="eqn"><div><span class="lbl">H =</span><table class="matrix"><tr><td>0.2705</td><td>0.0177</td><td>1155.18</td></tr><tr><td>-0.4989</td><td>0.7636</td><td>510.54</td></tr><tr><td>-2.394e-4</td><td>6.348e-7</td><td>1.0000</td></tr></table></div></div>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <!-- sather 1to2 -->
+          <table style="width:100%;border:0px;border-spacing:10px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr><th colspan="2">Sather Gate: image 1 &rarr; image 2 (5 correspondences)</th></tr>
+            <tr>
+              <td style="text-align:center;width:50%;vertical-align:top">
+                <img src="images/sather_1_2_points.jpg" width="100%" alt="Sather Gate image 1 points">
+                <br><strong>Image 1</strong>
+              </td>
+              <td style="text-align:center;width:50%;vertical-align:top">
+                <img src="images/sather_2_1_points.jpg" width="100%" alt="Sather Gate image 2 points">
+                <br><strong>Image 2</strong>
+              </td>
+            </tr>
+            <tr>
+              <td colspan="2" style="vertical-align:top">
+                <details>
+                  <summary>System of equations <code>Ah = b</code></summary>
+                  <div class="eqn">
+                    <div><span class="lbl">A</span><table class="matrix"><tr><td>2&#8239;486</td><td>1&#8239;243</td><td>1</td><td>0</td><td>0</td><td>0</td><td>-1&#8239;904&#8239;276</td><td>-952&#8239;138</td></tr><tr><td>0</td><td>0</td><td>0</td><td>2&#8239;486</td><td>1&#8239;243</td><td>1</td><td>-2&#8239;495&#8239;944</td><td>-1&#8239;247&#8239;972</td></tr><tr><td>3&#8239;184</td><td>1&#8239;524</td><td>1</td><td>0</td><td>0</td><td>0</td><td>-4&#8239;747&#8239;344</td><td>-2&#8239;272&#8239;284</td></tr><tr><td>0</td><td>0</td><td>0</td><td>3&#8239;184</td><td>1&#8239;524</td><td>1</td><td>-4&#8239;473&#8239;520</td><td>-2&#8239;141&#8239;220</td></tr><tr><td>4&#8239;092</td><td>1&#8239;061</td><td>1</td><td>0</td><td>0</td><td>0</td><td>-9&#8239;509&#8239;808</td><td>-2&#8239;465&#8239;764</td></tr><tr><td>0</td><td>0</td><td>0</td><td>4&#8239;092</td><td>1&#8239;061</td><td>1</td><td>-4&#8239;370&#8239;256</td><td>-1&#8239;133&#8239;148</td></tr><tr><td>2&#8239;812</td><td>5&#8239;312</td><td>1</td><td>0</td><td>0</td><td>0</td><td>-3&#8239;090&#8239;388</td><td>-5&#8239;837&#8239;888</td></tr><tr><td>0</td><td>0</td><td>0</td><td>2&#8239;812</td><td>5&#8239;312</td><td>1</td><td>-14&#8239;515&#8239;544</td><td>-27&#8239;420&#8239;544</td></tr><tr><td>2&#8239;362</td><td>5&#8239;296</td><td>1</td><td>0</td><td>0</td><td>0</td><td>-1&#8239;424&#8239;286</td><td>-3&#8239;193&#8239;488</td></tr><tr><td>0</td><td>0</td><td>0</td><td>2&#8239;362</td><td>5&#8239;296</td><td>1</td><td>-12&#8239;383&#8239;966</td><td>-27&#8239;766&#8239;928</td></tr></table></div>
+                    <div><span class="lbl">b</span><table class="matrix"><tr><td>766</td></tr><tr><td>1&#8239;004</td></tr><tr><td>1&#8239;491</td></tr><tr><td>1&#8239;405</td></tr><tr><td>2&#8239;324</td></tr><tr><td>1&#8239;068</td></tr><tr><td>1&#8239;099</td></tr><tr><td>5&#8239;162</td></tr><tr><td>603</td></tr><tr><td>5&#8239;243</td></tr></table></div>
+                  </div>
+                </details>
+                <div class="eqn"><div><span class="lbl">H =</span><table class="matrix"><tr><td>1.5543</td><td>-3.039e-4</td><td>-2863.59</td></tr><tr><td>0.3388</td><td>1.3958</td><td>-1256.01</td></tr><tr><td>1.214e-4</td><td>6.840e-6</td><td>1.0000</td></tr></table></div></div>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <!-- sather 3to2 -->
+          <table style="width:100%;border:0px;border-spacing:10px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr><th colspan="2">Sather Gate: image 3 &rarr; image 2 (5 correspondences)</th></tr>
+            <tr>
+              <td style="text-align:center;width:50%;vertical-align:top">
+                <img src="images/sather_3_2_points.jpg" width="100%" alt="Sather Gate image 3 points">
+                <br><strong>Image 3</strong>
+              </td>
+              <td style="text-align:center;width:50%;vertical-align:top">
+                <img src="images/sather_2_3_points.jpg" width="100%" alt="Sather Gate image 2 points">
+                <br><strong>Image 2</strong>
+              </td>
+            </tr>
+            <tr>
+              <td colspan="2" style="vertical-align:top">
+                <details>
+                  <summary>System of equations <code>Ah = b</code></summary>
+                  <div class="eqn">
+                    <div><span class="lbl">A</span><table class="matrix"><tr><td>947</td><td>823</td><td>1</td><td>0</td><td>0</td><td>0</td><td>-2&#8239;200&#8239;828</td><td>-1&#8239;912&#8239;652</td></tr><tr><td>0</td><td>0</td><td>0</td><td>947</td><td>823</td><td>1</td><td>-1&#8239;011&#8239;396</td><td>-878&#8239;964</td></tr><tr><td>2&#8239;489</td><td>1&#8239;002</td><td>1</td><td>0</td><td>0</td><td>0</td><td>-9&#8239;689&#8239;677</td><td>-3&#8239;900&#8239;786</td></tr><tr><td>0</td><td>0</td><td>0</td><td>2&#8239;489</td><td>1&#8239;002</td><td>1</td><td>-2&#8239;615&#8239;939</td><td>-1&#8239;053&#8239;102</td></tr><tr><td>1&#8239;795</td><td>1&#8239;291</td><td>1</td><td>0</td><td>0</td><td>0</td><td>-5&#8239;621&#8239;940</td><td>-4&#8239;043&#8239;412</td></tr><tr><td>0</td><td>0</td><td>0</td><td>1&#8239;795</td><td>1&#8239;291</td><td>1</td><td>-2&#8239;568&#8239;645</td><td>-1&#8239;847&#8239;421</td></tr><tr><td>2&#8239;569</td><td>4&#8239;849</td><td>1</td><td>0</td><td>0</td><td>0</td><td>-10&#8239;237&#8239;465</td><td>-19&#8239;323&#8239;265</td></tr><tr><td>0</td><td>0</td><td>0</td><td>2&#8239;569</td><td>4&#8239;849</td><td>1</td><td>-13&#8239;435&#8239;870</td><td>-25&#8239;360&#8239;270</td></tr><tr><td>966</td><td>3&#8239;444</td><td>1</td><td>0</td><td>0</td><td>0</td><td>-2&#8239;213&#8239;106</td><td>-7&#8239;890&#8239;204</td></tr><tr><td>0</td><td>0</td><td>0</td><td>966</td><td>3&#8239;444</td><td>1</td><td>-3&#8239;444&#8239;756</td><td>-12&#8239;281&#8239;304</td></tr></table></div>
+                    <div><span class="lbl">b</span><table class="matrix"><tr><td>2&#8239;324</td></tr><tr><td>1&#8239;068</td></tr><tr><td>3&#8239;893</td></tr><tr><td>1&#8239;051</td></tr><tr><td>3&#8239;132</td></tr><tr><td>1&#8239;431</td></tr><tr><td>3&#8239;985</td></tr><tr><td>5&#8239;230</td></tr><tr><td>2&#8239;291</td></tr><tr><td>3&#8239;566</td></tr></table></div>
+                  </div>
+                </details>
+                <div class="eqn"><div><span class="lbl">H =</span><table class="matrix"><tr><td>0.7074</td><td>-0.0376</td><td>1525.60</td></tr><tr><td>-0.1769</td><td>0.8542</td><td>463.34</td></tr><tr><td>-6.259e-5</td><td>-9.425e-6</td><td>1.0000</td></tr></table></div></div>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <!-- tree 1to2 -->
+          <table style="width:100%;border:0px;border-spacing:10px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr><th colspan="2">Tree: image 1 &rarr; image 2 (6 correspondences)</th></tr>
+            <tr>
+              <td style="text-align:center;width:50%;vertical-align:top">
+                <img src="images/tree_1_2_points.jpg" width="100%" alt="Tree image 1 points">
+                <br><strong>Image 1</strong>
+              </td>
+              <td style="text-align:center;width:50%;vertical-align:top">
+                <img src="images/tree_2_1_points.jpg" width="100%" alt="Tree image 2 points">
+                <br><strong>Image 2</strong>
+              </td>
+            </tr>
+            <tr>
+              <td colspan="2" style="vertical-align:top">
+                <details>
+                  <summary>System of equations <code>Ah = b</code></summary>
+                  <div class="eqn">
+                    <div><span class="lbl">A</span><table class="matrix"><tr><td>1&#8239;829</td><td>951</td><td>1</td><td>0</td><td>0</td><td>0</td><td>-3&#8239;467&#8239;784</td><td>-1&#8239;803&#8239;096</td></tr><tr><td>0</td><td>0</td><td>0</td><td>1&#8239;829</td><td>951</td><td>1</td><td>-5&#8239;684&#8239;532</td><td>-2&#8239;955&#8239;708</td></tr><tr><td>782</td><td>709</td><td>1</td><td>0</td><td>0</td><td>0</td><td>-751&#8239;502</td><td>-681&#8239;349</td></tr><tr><td>0</td><td>0</td><td>0</td><td>782</td><td>709</td><td>1</td><td>-2&#8239;310&#8239;028</td><td>-2&#8239;094&#8239;386</td></tr><tr><td>3&#8239;219</td><td>1&#8239;224</td><td>1</td><td>0</td><td>0</td><td>0</td><td>-10&#8239;262&#8239;172</td><td>-3&#8239;902&#8239;112</td></tr><tr><td>0</td><td>0</td><td>0</td><td>3&#8239;219</td><td>1&#8239;224</td><td>1</td><td>-10&#8239;603&#8239;386</td><td>-4&#8239;031&#8239;856</td></tr><tr><td>3&#8239;611</td><td>1&#8239;029</td><td>1</td><td>0</td><td>0</td><td>0</td><td>-12&#8239;768&#8239;496</td><td>-3&#8239;638&#8239;544</td></tr><tr><td>0</td><td>0</td><td>0</td><td>3&#8239;611</td><td>1&#8239;029</td><td>1</td><td>-11&#8239;309&#8239;652</td><td>-3&#8239;222&#8239;828</td></tr><tr><td>1&#8239;478</td><td>1&#8239;100</td><td>1</td><td>0</td><td>0</td><td>0</td><td>-2&#8239;324&#8239;894</td><td>-1&#8239;730&#8239;300</td></tr><tr><td>0</td><td>0</td><td>0</td><td>1&#8239;478</td><td>1&#8239;100</td><td>1</td><td>-4&#8239;807&#8239;934</td><td>-3&#8239;578&#8239;300</td></tr><tr><td>185</td><td>1&#8239;258</td><td>1</td><td>0</td><td>0</td><td>0</td><td>-63&#8239;825</td><td>-434&#8239;010</td></tr><tr><td>0</td><td>0</td><td>0</td><td>185</td><td>1&#8239;258</td><td>1</td><td>-637&#8239;325</td><td>-4&#8239;333&#8239;810</td></tr></table></div>
+                    <div><span class="lbl">b</span><table class="matrix"><tr><td>1&#8239;896</td></tr><tr><td>3&#8239;108</td></tr><tr><td>961</td></tr><tr><td>2&#8239;954</td></tr><tr><td>3&#8239;188</td></tr><tr><td>3&#8239;294</td></tr><tr><td>3&#8239;536</td></tr><tr><td>3&#8239;132</td></tr><tr><td>1&#8239;573</td></tr><tr><td>3&#8239;253</td></tr><tr><td>345</td></tr><tr><td>3&#8239;445</td></tr></table></div>
+                  </div>
+                </details>
+                <div class="eqn"><div><span class="lbl">H =</span><table class="matrix"><tr><td>0.8599</td><td>-0.1567</td><td>351.90</td></tr><tr><td>-0.0264</td><td>0.5594</td><td>2430.35</td></tr><tr><td>1.829e-6</td><td>-7.192e-5</td><td>1.0000</td></tr></table></div></div>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <!-- tree 3to2 -->
+          <table style="width:100%;border:0px;border-spacing:10px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr><th colspan="2">Tree: image 3 &rarr; image 2 (6 correspondences)</th></tr>
+            <tr>
+              <td style="text-align:center;width:50%;vertical-align:top">
+                <img src="images/tree_3_2_points.jpg" width="100%" alt="Tree image 3 points">
+                <br><strong>Image 3</strong>
+              </td>
+              <td style="text-align:center;width:50%;vertical-align:top">
+                <img src="images/tree_2_3_points.jpg" width="100%" alt="Tree image 2 points">
+                <br><strong>Image 2</strong>
+              </td>
+            </tr>
+            <tr>
+              <td colspan="2" style="vertical-align:top">
+                <details>
+                  <summary>System of equations <code>Ah = b</code></summary>
+                  <div class="eqn">
+                    <div><span class="lbl">A</span><table class="matrix"><tr><td>1&#8239;821</td><td>4&#8239;154</td><td>1</td><td>0</td><td>0</td><td>0</td><td>-3&#8239;452&#8239;616</td><td>-7&#8239;875&#8239;984</td></tr><tr><td>0</td><td>0</td><td>0</td><td>1&#8239;821</td><td>4&#8239;154</td><td>1</td><td>-5&#8239;659&#8239;668</td><td>-12&#8239;910&#8239;632</td></tr><tr><td>865</td><td>3&#8239;964</td><td>1</td><td>0</td><td>0</td><td>0</td><td>-831&#8239;265</td><td>-3&#8239;809&#8239;404</td></tr><tr><td>0</td><td>0</td><td>0</td><td>865</td><td>3&#8239;964</td><td>1</td><td>-2&#8239;555&#8239;210</td><td>-11&#8239;709&#8239;656</td></tr><tr><td>3&#8239;180</td><td>4&#8239;352</td><td>1</td><td>0</td><td>0</td><td>0</td><td>-10&#8239;137&#8239;840</td><td>-13&#8239;874&#8239;176</td></tr><tr><td>0</td><td>0</td><td>0</td><td>3&#8239;180</td><td>4&#8239;352</td><td>1</td><td>-10&#8239;474&#8239;920</td><td>-14&#8239;335&#8239;488</td></tr><tr><td>3&#8239;513</td><td>4&#8239;166</td><td>1</td><td>0</td><td>0</td><td>0</td><td>-12&#8239;421&#8239;968</td><td>-14&#8239;730&#8239;976</td></tr><tr><td>0</td><td>0</td><td>0</td><td>3&#8239;513</td><td>4&#8239;166</td><td>1</td><td>-11&#8239;002&#8239;716</td><td>-13&#8239;047&#8239;912</td></tr><tr><td>1&#8239;477</td><td>4&#8239;312</td><td>1</td><td>0</td><td>0</td><td>0</td><td>-2&#8239;323&#8239;321</td><td>-6&#8239;782&#8239;776</td></tr><tr><td>0</td><td>0</td><td>0</td><td>1&#8239;477</td><td>4&#8239;312</td><td>1</td><td>-4&#8239;804&#8239;681</td><td>-14&#8239;026&#8239;936</td></tr><tr><td>165</td><td>4&#8239;537</td><td>1</td><td>0</td><td>0</td><td>0</td><td>-56&#8239;925</td><td>-1&#8239;565&#8239;265</td></tr><tr><td>0</td><td>0</td><td>0</td><td>165</td><td>4&#8239;537</td><td>1</td><td>-568&#8239;425</td><td>-15&#8239;629&#8239;965</td></tr></table></div>
+                    <div><span class="lbl">b</span><table class="matrix"><tr><td>1&#8239;896</td></tr><tr><td>3&#8239;108</td></tr><tr><td>961</td></tr><tr><td>2&#8239;954</td></tr><tr><td>3&#8239;188</td></tr><tr><td>3&#8239;294</td></tr><tr><td>3&#8239;536</td></tr><tr><td>3&#8239;132</td></tr><tr><td>1&#8239;573</td></tr><tr><td>3&#8239;253</td></tr><tr><td>345</td></tr><tr><td>3&#8239;445</td></tr></table></div>
+                  </div>
+                </details>
+                <div class="eqn"><div><span class="lbl">H =</span><table class="matrix"><tr><td>1.3437</td><td>0.1861</td><td>-568.98</td></tr><tr><td>-6.685e-3</td><td>1.5287</td><td>-1979.42</td></tr><tr><td>-2.511e-6</td><td>9.687e-5</td><td>1.0000</td></tr></table></div></div>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <!-- ===================== A.3 ===================== -->
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:16px;width:100%;vertical-align:middle">
+                <h3>A.3 &nbsp;Warp the Images</h3>
+                <p>
+                  Both warps use inverse warping. First I push the source image's four corners through
+                  <code>H</code> to get the bounding box of the output. Then, for every output pixel, I
+                  map it back into the source image with <code>H<sup>&minus;1</sup></code> (dividing by
+                  the homogeneous coordinate) and sample a color there. Pixels that land outside the
+                  source are left black. Going backward means every output pixel gets exactly one
+                  color, so there are no holes.
+                </p>
+                <p>
+                  The two methods differ only in how they sample that color.
+                  <strong>Nearest neighbor</strong> rounds the source location to the closest pixel.
+                  <strong>Bilinear</strong> takes the four surrounding pixels and blends them by
+                  distance: first along <code>x</code> (top and bottom pairs), then along
+                  <code>y</code>.
+                </p>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:0px 16px 16px 16px;width:100%;vertical-align:middle">
+                <pre class="code"><code class="language-python">def warp_image(im, H, color_fn):
+    min_x, min_y, max_x, max_y = find_warp_image_bounds(im, H)
+    height = max_y - min_y + 1
+    width = max_x - min_x + 1
+    warped_im = np.zeros((height, width, 3))
+    H_inv = np.linalg.inv(H)
+    for yp in range(height):
+        for xp in range(width):
+            point = np.array([xp + min_x, yp + min_y, 1.0])
+            point_approx = H_inv @ point
+            point_approx /= point_approx[2]
+            color = color_fn(im, point_approx)
+            warped_im[yp, xp] = color
+    return warped_im
+
+def warp_image_nearest_neighbor(im, H):
+    def nearest_neighbor(src_im, point_approx):
+        height, width = src_im.shape[:2]
+        x, y = np.rint(point_approx[:2]).astype(int)
+        if x &gt;= 0 and x &lt; width and y &gt;= 0 and y &lt; height:
+            return src_im[y, x]
+        return [0, 0, 0]
+    return warp_image(im, H, nearest_neighbor)
+
+def warp_image_bilinear(im, H):
+    def bilinear(src_im, point_approx):
+        height, width = src_im.shape[:2]
+        x, y = point_approx[:2]
+        if x &lt; 0 or x &gt; width - 1 or y &lt; 0 or y &gt; height - 1:
+            return [0, 0, 0]
+        low_x, low_y = np.floor(point_approx[:2]).astype(int)
+        high_x, high_y = low_x + 1, low_y + 1
+        dx = x - low_x
+        dy = y - low_y
+        # colors at each corner
+        top_left = src_im[low_y, low_x]
+        top_right = src_im[low_y, high_x]
+        bottom_left = src_im[high_y, low_x]
+        bottom_right = src_im[high_y, high_x]
+        # x interpolation
+        top = (1 - dx) * top_left + dx * top_right
+        bottom = (1 - dx) * bottom_left + dx * bottom_right
+        # y interpolation
+        return (1 - dy) * top + dy * bottom
+    return warp_image(im, H, bilinear)</code></pre>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:16px;width:100%;vertical-align:middle">
+                <h4>Rectification</h4>
+                <p>
+                  To rectify, I clicked the 4 corners of something I know is a rectangle and computed
+                  the homography that sends them to the corners of an axis-aligned rectangle.
+                </p>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:10px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr><th colspan="2">Door</th></tr>
+            <tr>
+              <td style="text-align:center;width:50%;vertical-align:top"><img src="images/door_points.jpg" width="100%" alt="Door with window corners marked"><br>Original, with door window corners marked</td>
+              <td style="text-align:center;width:50%;vertical-align:top"><img src="images/door_rectified.jpg" width="100%" alt="Rectified door"><br>Rectified (bilinear)</td>
+            </tr>
+            <tr><th colspan="2"><br>Window</th></tr>
+            <tr>
+              <td style="text-align:center;width:50%;vertical-align:top"><img src="images/window_points.jpg" width="100%" alt="Window with pane corners marked"><br>Original, with top-left pane corners marked</td>
+              <td style="text-align:center;width:50%;vertical-align:top"><img src="images/window_rectified.jpg" width="100%" alt="Rectified window"><br>Rectified (bilinear)</td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:16px;width:100%;vertical-align:middle">
+                <h4>Nearest Neighbor vs. Bilinear</h4>
+                <p>
+                  The door rectification stretches the right side of the image a lot, so it's a good
+                  place to compare. Nearest neighbor is faster but gets blocky and jagged where pixels
+                  are upsampled. Bilinear is slower (four lookups per pixel instead of one) but much
+                  smoother. For the mosaics I used nearest neighbor, since the photos are big and it
+                  ran a lot faster on my computer.
+                </p>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:10px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="text-align:center;vertical-align:top">
+                <img src="images/door_nn_vs_bilinear.jpg" width="100%" alt="Nearest neighbor vs bilinear crop">
+                <br>Nearest neighbor (left) vs. bilinear (right), cropped from the rectified door
+              </td>
+            </tr>
+          </tbody></table>
+
+
+          <!-- ===================== A.4 ===================== -->
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:16px;width:100%;vertical-align:middle">
+                <h3>A.4 &nbsp;Blend the Images into a Mosaic</h3>
+                <p>
+                  For each set I start with image 2 as the mosaic, then warp images 1 and 3 into its
+                  frame with their homographies and add them one at a time. Each time, the canvas grows
+                  to fit the warped image's bounding box.
+                </p>
+                <p>
+                  To hide the seams, I weight each pixel in the overlap by its distance to the edge of
+                  its image (using a distance transform), so each image fades out toward its border.
+                  Then I do two-band blending: the low frequencies (Gaussian blur) are blended with the
+                  smooth, blurred weights, and the high frequencies use the sharp weights so edges don't
+                  ghost. I used <code>&sigma; = 50</code> for the gateway and <code>&sigma; = 20</code>
+                  for Sather Gate and the tree.
+                </p>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:0px 16px 16px 16px;width:100%;vertical-align:middle">
+                <pre class="code"><code class="language-python">def two_band_blending(im1, im2, mask, sigma):
+    low_im1, high_im1 = get_two_band(im1, sigma)
+    low_im2, high_im2 = get_two_band(im2, sigma)
+    low_mask = cv2.GaussianBlur(mask, (0, 0), sigmaX=sigma)
+    mask = mask[:, :, None]
+    low_mask = low_mask[:, :, None]
+
+    low_blended = low_mask * low_im1 + (1 - low_mask) * low_im2
+    high_blended = mask * high_im1 + (1 - mask) * high_im2
+    return low_blended + high_blended
+
+# in add_image_to_mosaic: weight overlapping pixels by distance to each image's boundary
+dist1 = cv2.distanceTransform(mask1, cv2.DIST_L2, 3)
+dist2 = cv2.distanceTransform(mask2, cv2.DIST_L2, 3)
+overlap = (mask1 == 1.0) &amp; (mask2 == 1.0)
+blend_mask[overlap] = dist1[overlap] / (dist1[overlap] + dist2[overlap])</code></pre>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <!-- Gateway mosaic -->
+          <table style="width:100%;border:0px;border-spacing:10px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr><th colspan="3">Gateway</th></tr>
+            <tr>
+              <td style="text-align:center;width:33%;vertical-align:top"><img src="images/gateway_1.jpg" width="100%" alt="Gateway 1"><br>Image 1</td>
+              <td style="text-align:center;width:33%;vertical-align:top"><img src="images/gateway_2.jpg" width="100%" alt="Gateway 2"><br>Image 2</td>
+              <td style="text-align:center;width:33%;vertical-align:top"><img src="images/gateway_3.jpg" width="100%" alt="Gateway 3"><br>Image 3</td>
+            </tr>
+            <tr>
+              <td colspan="3" style="text-align:center;vertical-align:top">
+                <img src="images/gateway_mosaic.jpg" width="100%" alt="Gateway mosaic">
+                <br><strong>Gateway mosaic</strong>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <!-- Sather mosaic -->
+          <table style="width:100%;border:0px;border-spacing:10px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr><th colspan="3"><br>Sather Gate</th></tr>
+            <tr>
+              <td style="text-align:center;width:33%;vertical-align:top"><img src="images/sather_1.jpg" width="100%" alt="Sather 1"><br>Image 1</td>
+              <td style="text-align:center;width:33%;vertical-align:top"><img src="images/sather_2.jpg" width="100%" alt="Sather 2"><br>Image 2</td>
+              <td style="text-align:center;width:33%;vertical-align:top"><img src="images/sather_3.jpg" width="100%" alt="Sather 3"><br>Image 3</td>
+            </tr>
+            <tr>
+              <td colspan="3" style="text-align:center;vertical-align:top">
+                <img src="images/sather_mosaic.jpg" width="100%" alt="Sather Gate mosaic">
+                <br><strong>Sather Gate mosaic</strong>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <!-- Tree mosaic -->
+          <table style="width:100%;border:0px;border-spacing:10px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr><th colspan="3"><br>Tree</th></tr>
+            <tr>
+              <td style="text-align:center;width:33%;vertical-align:top"><img src="images/tree_1.jpg" width="100%" alt="Tree 1"><br>Image 1</td>
+              <td style="text-align:center;width:33%;vertical-align:top"><img src="images/tree_2.jpg" width="100%" alt="Tree 2"><br>Image 2</td>
+              <td style="text-align:center;width:33%;vertical-align:top"><img src="images/tree_3.jpg" width="100%" alt="Tree 3"><br>Image 3</td>
+            </tr>
+            <tr>
+              <td colspan="3" style="text-align:center;vertical-align:top">
+                <img src="images/tree_mosaic.jpg" width="60%" alt="Tree mosaic">
+                <br><strong>Tree mosaic</strong>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:16px;width:100%;vertical-align:middle">
+                <p>
+                  The blending hides the exposure differences between shots pretty well. People who
+                  moved between shots still ghost (like the walkers under Sather Gate), and the
+                  wide-angle gateway shots leave a visible seam on the white chair in front.
+                </p>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <!-- ===================== Footer ===================== -->
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:0px">
+                <br>
+                <p style="text-align:right;font-size:small;">
+                  Website template from <a href="https://jonbarron.info/">Jon Barron</a>.
+                </p>
+              </td>
+            </tr>
+          </tbody></table>
+        </td>
+      </tr>
+    </tbody></table>
+    <script>hljs.highlightAll();</script>
+  </body>
+</html>
