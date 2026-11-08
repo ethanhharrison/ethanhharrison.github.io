@@ -92,7 +92,8 @@
                 <p style="text-align:center">
                   <a href="../index.html">CS180 Projects</a> &nbsp;/&nbsp;
                   <a href="../../index.html">Home</a> &nbsp;/&nbsp;
-                  <a href="https://cal-cs180.github.io/fa26/hw/proj3/partA.html">Part A Assignment</a>
+                  <a href="https://cal-cs180.github.io/fa26/hw/proj3/partA.html">Part A Assignment</a> &nbsp;/&nbsp;
+                  <a href="https://cal-cs180.github.io/fa26/hw/proj3/partB.html">Part B Assignment</a>
                 </p>
               </td>
             </tr>
@@ -106,7 +107,8 @@
                 <p>
                   In this project I stitch photos together into panoramas. I pick matching points
                   between overlapping photos, solve for the homography between them, warp the images
-                  into a shared frame, and blend them into a mosaic.
+                  into a shared frame, and blend them into a mosaic. In Part B, I do the same thing automatically by detecting
+                  and matching features between the photos.
                 </p>
               </td>
             </tr>
@@ -597,6 +599,259 @@ blend_mask[overlap] = dist1[overlap] / (dist1[overlap] + dist2[overlap])</code><
                   The blending hides the exposure differences between shots pretty well. People who
                   moved between shots still ghost (like the walkers under Sather Gate), and the
                   wide-angle gateway shots leave a visible seam on the white chair in front.
+                </p>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <!-- ===================== B.1 ===================== -->
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:16px;width:100%;vertical-align:middle">
+                <br>
+                <h2>Part B: Feature Matching for Autostitching</h2>
+                <p>
+                  In Part B I get rid of the hand-clicked points and find correspondences automatically.
+                  Everything below uses two photos of Wheeler Hall. All the detection runs on the
+                  grayscale image, but I draw the results on the color photos.
+                </p>
+                <br>
+                <h3>B.1 &nbsp;Harris Corner Detection</h3>
+                <p>
+                  I find Harris corners with the provided <code>harris.py</code>, then thin them out with
+                  adaptive non-maximal suppression (ANMS). For each corner, ANMS finds the distance to the
+                  nearest corner that is clearly stronger (<code>f<sub>i</sub> &lt; 0.9 f<sub>j</sub></code>),
+                  and keeps the corners with the largest radii. This spreads the points out across the
+                  image instead of bunching them up in the trees. I keep 500 corners in both cases.
+                </p>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:10px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <th style="width:50%">Harris corners (strongest 500)</th>
+              <th style="width:50%">ANMS (top 500)</th>
+            </tr>
+            <tr>
+              <td style="text-align:center;vertical-align:top"><img src="images/b_wheeler_2_harris.jpg" width="100%" alt="Wheeler 2 Harris corners"><br>Wheeler 2</td>
+              <td style="text-align:center;vertical-align:top"><img src="images/b_wheeler_2_anms.jpg" width="100%" alt="Wheeler 2 ANMS corners"><br>Wheeler 2</td>
+            </tr>
+            <tr>
+              <td style="text-align:center;vertical-align:top"><img src="images/b_wheeler_3_harris.jpg" width="100%" alt="Wheeler 3 Harris corners"><br>Wheeler 3</td>
+              <td style="text-align:center;vertical-align:top"><img src="images/b_wheeler_3_anms.jpg" width="100%" alt="Wheeler 3 ANMS corners"><br>Wheeler 3</td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:0px 16px 16px 16px;width:100%;vertical-align:middle">
+                <pre class="code"><code class="language-python">def adaptive_non_maximal_suppression(im, c=0.9):
+    harris_image, interest_points = get_harris_corners(im)
+    interest_points = interest_points.T
+    # pairwise comparisons
+    harris_responses = np.array([harris_image[yi, xi] for (yi, xi) in interest_points])
+    mask = harris_responses[..., None] &lt; c * harris_responses[None, ...]
+    # pairwise distances
+    distances = dist2(interest_points, interest_points)
+    filtered_distances = np.where(mask, distances, float('inf'))
+    # find and sort radii
+    radii = np.min(filtered_distances, axis=1)
+    sorted_idxs = np.argsort(radii)[::-1]
+    sorted_points = interest_points[sorted_idxs]
+    return sorted_points</code></pre>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <!-- ===================== B.2 ===================== -->
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:16px;width:100%;vertical-align:middle">
+                <h3>B.2 &nbsp;Feature Descriptor Extraction</h3>
+                <p>
+                  For each corner I blur the image (Gaussian, &sigma; = 5), take a 40&times;40 window
+                  around it, and sample every 5th pixel to get an 8&times;8 patch. Then I normalize the
+                  patch to zero mean and unit standard deviation so the descriptor doesn't care about
+                  brightness or contrast. Here are the first three descriptors from each image (boxes
+                  show the 40&times;40 window):
+                </p>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:10px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="text-align:center;width:33%;vertical-align:top"><img src="images/b_wheeler_2_desc_0.jpg" width="100%" alt="Wheeler 2 descriptor 1 location"><br><img src="images/b_wheeler_2_desc_0_patch.png" width="40%" style="image-rendering:pixelated" alt="Wheeler 2 descriptor 1"><br>Wheeler 2, (548, 333)</td>
+              <td style="text-align:center;width:33%;vertical-align:top"><img src="images/b_wheeler_2_desc_1.jpg" width="100%" alt="Wheeler 2 descriptor 2 location"><br><img src="images/b_wheeler_2_desc_1_patch.png" width="40%" style="image-rendering:pixelated" alt="Wheeler 2 descriptor 2"><br>Wheeler 2, (611, 266)</td>
+              <td style="text-align:center;width:33%;vertical-align:top"><img src="images/b_wheeler_2_desc_2.jpg" width="100%" alt="Wheeler 2 descriptor 3 location"><br><img src="images/b_wheeler_2_desc_2_patch.png" width="40%" style="image-rendering:pixelated" alt="Wheeler 2 descriptor 3"><br>Wheeler 2, (273, 80)</td>
+            </tr>
+            <tr>
+              <td style="text-align:center;width:33%;vertical-align:top"><img src="images/b_wheeler_3_desc_0.jpg" width="100%" alt="Wheeler 3 descriptor 1 location"><br><img src="images/b_wheeler_3_desc_0_patch.png" width="40%" style="image-rendering:pixelated" alt="Wheeler 3 descriptor 1"><br>Wheeler 3, (555, 459)</td>
+              <td style="text-align:center;width:33%;vertical-align:top"><img src="images/b_wheeler_3_desc_1.jpg" width="100%" alt="Wheeler 3 descriptor 2 location"><br><img src="images/b_wheeler_3_desc_1_patch.png" width="40%" style="image-rendering:pixelated" alt="Wheeler 3 descriptor 2"><br>Wheeler 3, (619, 423)</td>
+              <td style="text-align:center;width:33%;vertical-align:top"><img src="images/b_wheeler_3_desc_2.jpg" width="100%" alt="Wheeler 3 descriptor 3 location"><br><img src="images/b_wheeler_3_desc_2_patch.png" width="40%" style="image-rendering:pixelated" alt="Wheeler 3 descriptor 3"><br>Wheeler 3, (116, 341)</td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:0px 16px 16px 16px;width:100%;vertical-align:middle">
+                <pre class="code"><code class="language-python">def feature_descriptor(im, interest_points, s=5, size=8):
+    sigmaX, sigmaY = 5, 5
+    ksize = 6 * sigmaX  + 1
+    blurred_im = cv2.GaussianBlur(im, ksize=(ksize, ksize), sigmaX=sigmaX, sigmaY=sigmaY)
+    num_points = interest_points.shape[0]
+    feature_descriptions = np.zeros((num_points, size, size))
+    for i, (iy, ix) in enumerate(interest_points):
+        start_y, end_y = iy - s * size // 2, iy + s * size // 2
+        start_x, end_x = ix - s * size // 2, ix + s * size // 2
+        sample_points = blurred_im[start_y:end_y:s, start_x:end_x:s]
+        sample_vector = sample_points.flatten()
+        norm_vector = (sample_vector - np.mean(sample_vector)) / np.std(sample_vector)
+        feature_descriptions[i] = norm_vector.reshape((size, size))
+    return np.array(feature_descriptions)</code></pre>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <!-- ===================== B.3 ===================== -->
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:16px;width:100%;vertical-align:middle">
+                <h3>B.3 &nbsp;Feature Matching</h3>
+                <p>
+                  For each descriptor in the first image, I find its two nearest neighbors (SSD) in the
+                  second image and use Lowe's ratio test: keep the match only if
+                  <code>d<sub>1-NN</sub> / d<sub>2-NN</sub> &lt; 0.7</code>, which I picked from
+                  Figure 6b of the paper. A real match should be much closer than the next-best option.
+                  This gave 263 matches between the two Wheeler photos. Here are three of them:
+                </p>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:10px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr><td style="text-align:center;vertical-align:top"><img src="images/b_wheeler_match_0.jpg" width="100%" alt="Match 1"><br>Match 1</td></tr>
+            <tr><td style="text-align:center;vertical-align:top"><img src="images/b_wheeler_match_1.jpg" width="100%" alt="Match 2"><br>Match 2</td></tr>
+            <tr><td style="text-align:center;vertical-align:top"><img src="images/b_wheeler_match_2.jpg" width="100%" alt="Match 3"><br>Match 3</td></tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:0px 16px 16px 16px;width:100%;vertical-align:middle">
+                <pre class="code"><code class="language-python">def feature_matching(descs1, descs2, threshold=0.7):
+    matches = []
+    for i, desc1 in enumerate(descs1):
+        distances = np.sum((desc1 - descs2) ** 2, axis=(1,2))
+        nearest = np.argpartition(distances, 1)[:2]
+        nn_1_idx, nn_2_idx = nearest[np.argsort(distances[nearest])]
+        ratio = distances[nn_1_idx] / distances[nn_2_idx]
+        if ratio &lt; threshold:
+            matches.append((i, nn_1_idx))
+    return matches</code></pre>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <!-- ===================== B.4 ===================== -->
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:16px;width:100%;vertical-align:middle">
+                <h3>B.4 &nbsp;RANSAC for Robust Homography</h3>
+                <p>
+                  The ratio test still lets some bad matches through, so I use 4-point RANSAC. For 2000
+                  iterations, I pick 4 random matches, fit an exact homography, and count how many
+                  matches it maps to within 3 pixels. I keep the biggest set of inliers and refit H to
+                  all of them with least squares. Then the mosaic is built with the same warping and
+                  blending code as Part A.
+                </p>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:0px 16px 16px 16px;width:100%;vertical-align:middle">
+                <pre class="code"><code class="language-python">def run_ransac(matches, interest1, interest2, num_points=4, threshold=3.0, max_iters=2000):
+    best_num_matches = float("-inf")
+    best_inliers = None
+    for _ in range(max_iters):
+        random_idxs = np.random.choice(len(matches), num_points, replace=False)
+        random_int1s = np.array([interest1[matches[i][0]][::-1] for i in random_idxs])
+        random_int2s = np.array([interest2[matches[i][1]][::-1] for i in random_idxs])
+        H = get_homography_matrix(random_int1s, random_int2s)
+
+        num_matches = 0
+        inliers = []
+        for int1_idx, int2_idx in matches:
+            y1, x1 = interest1[int1_idx]
+            y2, x2 = interest2[int2_idx]
+            point = np.array([x2, y2])
+            pred_point = H @ np.array([x1, y1, 1.0])
+            pred_point = pred_point[:2] / pred_point[2]
+            if np.linalg.norm(point - pred_point) &lt; threshold:
+                num_matches += 1
+                inliers.append((int1_idx, int2_idx))
+
+        if num_matches &gt; best_num_matches:
+            best_num_matches = num_matches
+            best_inliers = inliers
+
+    inlier_int1s = np.array([interest1[inlier[0]][::-1] for inlier in best_inliers])
+    inlier_int2s = np.array([interest2[inlier[1]][::-1] for inlier in best_inliers])
+    H = get_homography_matrix(inlier_int1s, inlier_int2s)
+    return H</code></pre>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:16px;width:100%;vertical-align:middle">
+                <p>
+                  I stitched images 1 and 2 of each set at a smaller resolution to keep things fast. For
+                  Gateway and Sather Gate, the manual versions use my Part A points (scaled to the
+                  smaller images) so they're directly comparable. Wheeler is a new set, so it only has
+                  an automatic version.
+                </p>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:10px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr><th colspan="2">Gateway</th></tr>
+            <tr>
+              <td style="text-align:center;width:50%;vertical-align:top"><img src="images/b_gateway_manual_mosaic.jpg" width="100%" alt="Gateway manual mosaic"><br>Manual</td>
+              <td style="text-align:center;width:50%;vertical-align:top"><img src="images/b_gateway_auto_mosaic.jpg" width="100%" alt="Gateway automatic mosaic"><br>Automatic</td>
+            </tr>
+            <tr><th colspan="2"><br>Sather Gate</th></tr>
+            <tr>
+              <td style="text-align:center;width:50%;vertical-align:top"><img src="images/b_sather_manual_mosaic.jpg" width="100%" alt="Sather Gate manual mosaic"><br>Manual</td>
+              <td style="text-align:center;width:50%;vertical-align:top"><img src="images/b_sather_auto_mosaic.jpg" width="100%" alt="Sather Gate automatic mosaic"><br>Automatic</td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:10px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr><th colspan="2"><br>Wheeler Hall</th></tr>
+            <tr>
+              <td style="text-align:center;width:50%;vertical-align:top"><img src="images/b_wheeler_2.jpg" width="100%" alt="Wheeler 2"><br>Image 1</td>
+              <td style="text-align:center;width:50%;vertical-align:top"><img src="images/b_wheeler_3.jpg" width="100%" alt="Wheeler 3"><br>Image 2</td>
+            </tr>
+            <tr>
+              <td colspan="2" style="text-align:center;vertical-align:top">
+                <img src="images/b_wheeler_auto_mosaic.jpg" width="80%" alt="Wheeler automatic mosaic">
+                <br><strong>Wheeler Hall mosaic (automatic)</strong>
+              </td>
+            </tr>
+          </tbody></table>
+
+          <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+            <tr>
+              <td style="padding:16px;width:100%;vertical-align:middle">
+                <p>
+                  The automatic mosaics come out about as well as my manual ones, without any clicking.
+                  The automatic gateway even looks a bit less stretched, since RANSAC fits H to a lot
+                  more points than the 6 I clicked.
                 </p>
               </td>
             </tr>
